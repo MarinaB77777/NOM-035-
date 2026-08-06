@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">Panel de Control NOM-035</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --purple: #8b5cf6;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .container { max-width: 1000px; margin: 0 auto; flex: 1; width: 100%; }
+    header { text-align: center; margin-bottom: 40px; position: relative; }
+    h1 { margin: 0 0 10px 0; font-size: 28px; color: #f1f5f9; }
+    p { color: var(--text-muted); font-size: 15px; margin: 0; }
+    
+    .lang-switcher {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 6px 12px;
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .lang-switcher:hover { border-color: var(--accent); }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+    }
+    .card h3 { margin-top: 0; font-size: 18px; color: #f1f5f9; display: flex; align-items: center; gap: 10px; }
+    .card p { font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
+    
+    .btn {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      text-align: center;
+      transition: background-color 0.2s;
+      display: inline-block;
+    }
+    .btn:hover { background-color: var(--accent-hover); }
+    .btn.secondary { background-color: #475569; }
+    .btn.secondary:hover { background-color: #334155; }
+    .btn.purple { background-color: var(--purple); }
+    .btn.purple:hover { background-color: #7c3aed; }
+    .btn.warning { background-color: var(--warning); color: #0f172a; font-weight: bold; }
+    .btn.warning:hover { background-color: #d97706; }
+
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 13px;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <button class="lang-switcher" onclick="toggleLanguage()" id="langBtn">🇪🇸 ES / 🇬🇧 EN</button>
+    <h1 id="main-title">🚀 Panel de Control NOM-035</h1>
+    <p id="main-subtitle">Plataforma de gestión, conversión, evaluación e inteligencia analítica de riesgos psicosociales.</p>
+  </header>
+
+  <div class="grid">
+    <!-- Кнопка 1 -->
+    <div class="card">
+      <div>
+        <h3 id="c1-title">🛠 Extractor NOM-035</h3>
+        <p id="c1-desc">Herramienta de extracción de preguntas con atributos completos desde texto plano a JSON estructurado.</p>
+      </div>
+      <a href="extractor.html" class="btn secondary" data-btn="open">Abrir Extractor</a>
+    </div>
+
+    <!-- Кнопка 2 -->
+    <div class="card">
+      <div>
+        <h3 id="c2-title">⚙️ Research OS Bridge</h3>
+        <p id="c2-desc">Conversión precisa de reactivos entre el formato estándar, Research OS y matriz de compatibilidad.</p>
+      </div>
+      <a href="bridge.html" class="btn secondary" data-btn="open">Abrir Bridge</a>
+    </div>
+
+    <!-- Кнопка 3 -->
+    <div class="card">
+      <div>
+        <h3 id="c3-title">📋 Simulador / Módulo de Evaluación</h3>
+        <p id="c3-desc">Cuestionario confidencial evaluado estrictamente bajo las tablas oficiales de la NOM-035 (Guía III).</p>
+      </div>
+      <a href="evaluacion.html" class="btn" data-btn="start">Iniciar Evaluación</a>
+    </div>
+
+    <!-- Переход 1 -->
+    <div class="card">
+      <div>
+        <h3 id="c4-title">📝 Módulo Adicional de Encuestas</h3>
+        <p id="c4-desc">Salida hacia otro formato de cuestionario complementario para la evaluación integral de la plantilla.</p>
+      </div>
+      <a href="extra_survey.html" class="btn warning" data-btn="open-survey">Abrir Segundo Oпросник</a>
+    </div>
+
+    <!-- Переход 2 -->
+    <div class="card">
+      <div>
+        <h3 id="c5-title">🗺️ Mapa Psicológico en Tiempo Real</h3>
+        <p id="c5-desc">Monitoreo dinámico del clima laboral y niveles de riesgo psicosocial (En desarrollo activo).</p>
+      </div>
+      <a href="psych_map.html" class="btn purple" data-btn="view-map">Ver Mapa en Vivo</a>
+    </div>
+
+    <!-- Переход 3 -->
+    <div class="card">
+      <div>
+        <h3 id="c6-title">🤖 IA Analítico</h3>
+        <p id="c6-desc">Módulo de procesamiento inteligente para la generación automatizada de recomendaciones y reportes ejecutivos.</p>
+      </div>
+      <a href="ai_analyst.html" class="btn purple" data-btn="open-ai">Abrir IA Analítico</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  CRM Sharks + Gemini + TU UNIVERSIDAD PODRÍA ESTAR AQUÍ
+</footer>
+
+<script>
+  const translations = {
+    es: {
+      title: "Panel de Control NOM-035",
+      mainTitle: "🚀 Panel de Control NOM-035",
+      mainSubtitle: "Plataforma de gestión, conversión, evaluación e inteligencia analítica de riesgos psicosociales.",
+      c1Title: "🛠 Extractor NOM-035",
+      c1Desc: "Herramienta de extracción de preguntas con atributos completos desde texto plano a JSON estructurado.",
+      c2Title: "⚙️ Research OS Bridge",
+      c2Desc: "Conversión precisa de reactivos entre el formato estándar, Research OS y matriz de compatibilidad.",
+      c3Title: "📋 Simulador / Módulo de Evaluación",
+      c3Desc: "Cuestionario confidencial evaluado estrictamente bajo las tablas oficiales de la NOM-035 (Guía III).",
+      c4Title: "📝 Módulo Adicional de Encuestas",
+      c4Desc: "Salida hacia otro formato de cuestionario complementario para la evaluación integral de la plantilla.",
+      c5Title: "🗺️ Mapa Psicológico en Tiempo Real",
+      c5Desc: "Monitoreo dinámico del clima laboral y niveles de riesgo psicosocial (En desarrollo activo).",
+      c6Title: "🤖 IA Analítico",
+      c6Desc: "Módulo de procesamiento inteligente para la generación automatizada de recomendaciones y reportes ejecutivos.",
+      btnOpen: "Abrir Extractor",
+      btnBridge: "Abrir Bridge",
+      btnStart: "Iniciar Evaluación",
+      btnSurvey: "Abrir Segundo Cuestionario",
+      btnMap: "Ver Mapa en Vivo",
+      btnAi: "Abrir IA Analítico",
+      langLabel: "🇬🇧 EN / 🇪🇸 ES"
+    },
+    en: {
+      title: "NOM-035 Control Panel",
+      mainTitle: "🚀 NOM-035 Control Panel",
+      mainSubtitle: "Management, conversion, evaluation, and analytical intelligence platform for psychosocial risks.",
+      c1Title: "🛠 NOM-035 Extractor",
+      c1Desc: "Tool for extracting questions with complete attributes from plain text into structured JSON.",
+      c2Title: "⚙️ Research OS Bridge",
+      c2Desc: "Precise conversion of items between standard format, Research OS, and compatibility matrix.",
+      c3Title: "📋 Simulator / Evaluation Module",
+      c3Desc: "Confidential questionnaire evaluated strictly under official NOM-035 tables (Guide III).",
+      c4Title: "📝 Additional Survey Module",
+      c4Desc: "Access to another complementary questionnaire format for comprehensive staff evaluation.",
+      c5Title: "🗺️ Real-Time Psychological Map",
+      c5Desc: "Dynamic monitoring of work climate and psychosocial risk levels (Under active development).",
+      c6Title: "🤖 AI Analyst",
+      c6Desc: "Intelligent processing module for automated generation of recommendations and executive reports.",
+      btnOpen: "Open Extractor",
+      btnBridge: "Open Bridge",
+      btnStart: "Start Evaluation",
+      btnSurvey: "Open Second Survey",
+      btnMap: "View Live Map",
+      btnAi: "Open AI Analyst",
+      langLabel: "🇪🇸 ES / 🇬🇧 EN"
+    }
+  };
+
+  let currentLang = 'es';
+
+  function toggleLanguage() {
+    currentLang = currentLang === 'es' ? 'en' : 'es';
+    const t = translations[currentLang];
+
+    document.getElementById('page-title').textContent = t.title;
+    document.getElementById('main-title').textContent = t.mainTitle;
+    document.getElementById('main-subtitle').textContent = t.mainSubtitle;
+    
+    document.getElementById('c1-title').textContent = t.c1Title;
+    document.getElementById('c1-desc').textContent = t.c1Desc;
+    
+    document.getElementById('c2-title').textContent = t.c2Title;
+    document.getElementById('c2-desc').textContent = t.c2Desc;
+    
+    document.getElementById('c3-title').textContent = t.c3Title;
+    document.getElementById('c3-desc').textContent = t.c3Desc;
+    
+    document.getElementById('c4-title').textContent = t.c4Title;
+    document.getElementById('c4-desc').textContent = t.c4Desc;
+    
+    document.getElementById('c5-title').textContent = t.c5Title;
+    document.getElementById('c5-desc').textContent = t.c5Desc;
+    
+    document.getElementById('c6-title').textContent = t.c6Title;
+    document.getElementById('c6-desc').textContent = t.c6Desc;
+
+    // Кнопки
+    document.querySelectorAll('[data-btn="open"]')[0].textContent = t.btnOpen;
+    document.querySelectorAll('[data-btn="open"]')[1].textContent = t.btnBridge;
+    document.querySelector('[data-btn="start"]').textContent = t.btnStart;
+    document.querySelector('[data-btn="open-survey"]').textContent = t.btnSurvey;
+    document.querySelector('[data-btn="view-map"]').textContent = t.btnMap;
+    document.querySelector('[data-btn="open-ai"]').textContent = t.btnAi;
+
+    document.getElementById('langBtn').textContent = t.langLabel;
+    document.documentElement.lang = currentLang;
+  }
+</script>
+
+</body>
+</html>

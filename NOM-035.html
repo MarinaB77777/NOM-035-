@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Extractor NOM-035 (Atributos Completos)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f4f4f5; color: #18181b; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    textarea { width: 100%; padding: 12px; border: 1px solid #d4d4d8; border-radius: 8px; font-family: monospace; font-size: 14px; resize: vertical; box-sizing: border-box; }
+    button { background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 15px; font-size: 16px; }
+    button:hover { background: #1d4ed8; }
+    pre { background: #27272a; color: #a1a1aa; padding: 16px; border-radius: 8px; overflow-x: auto; max-height: 500px; margin-top: 20px; }
+    .json-key { color: #f472b6; }
+    .json-string { color: #34d399; }
+    .json-number { color: #fbbf24; }
+    .json-boolean { color: #60a5fa; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🛠 Herramienta de Extracción de Preguntas NOM-035 (Full Attributes)</h1>
+  <p>Pega el texto con formato <code>* G3-Q</code>, y el script recopilará la estructura completa con dominios, categorías y tipos en español.</p>
+  
+  <textarea id="rawInput" rows="12" placeholder="Pega aquí el texto con las preguntas..."></textarea>
+  
+  <button onclick="extractData()">Generar JSON limpio</button>
+
+  <div id="outputSection" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+      <h2 style="margin: 0; font-size: 18px;">Resultado: <span id="count" style="color:#2563eb;"></span></h2>
+      <button style="margin-top: 0; padding: 8px 16px; background: #10b981;" onclick="copyJSON()">📋 Copiar JSON</button>
+    </div>
+    <pre id="jsonOutput"></pre>
+  </div>
+</div>
+
+<script>
+  // Mapa oficial de correspondencia de Categorías a sus Dominios en la NOM-035 (Guía III)
+ // Точное соответствие категорий и доменов по официальной таблице NOM-035 (Guía III)
+  function getDomainByCategory(category) {
+    const map = {
+      // Категория: Ambiente de trabajo
+      "Condiciones en el ambiente de trabajo": "Condiciones en el ambiente de trabajo",
+
+      // Категория: Factores propios de la actividad
+      "Carga de trabajo": "Carga de trabajo",
+      "Falta de control sobre el trabajo": "Falta de control sobre el trabajo",
+
+      // Категория: Organización del tiempo de trabajo
+      "Jornada de trabajo": "Jornada de trabajo",
+      "Interferencia en la relación trabajo-familia": "Interferencia en la relación trabajo-familia",
+
+      // Категория: Liderazgo y relaciones en el trabajo
+      "Liderazgo": "Liderazgo",
+      "Relaciones en el trabajo": "Relaciones en el trabajo",
+      "Violencia laboral": "Violencia laboral",
+      "Violencia": "Violencia laboral",
+
+      // Категория: Entorno organizacional
+      "Reconocimiento del desempeño": "Reconocimiento del desempeño",
+      "Escasa evaluación y reconocimiento del desempeño": "Reconocimiento del desempeño",
+      "Insuficiente sentido de pertenencia e inestabilidad": "Insuficiente sentido de pertenencia e inestabilidad",
+      "Sentido de pertenencia e inestabilidad": "Insuficiente sentido de pertenencia e inestabilidad",
+      "Atención a clientes y usuarios": "Atención a clientes y usuarios"
+    };
+    return map[category] || category;
+  }
+
+  // Traducción y normalización de los tipos de preguntas al español exacto
+  function translateType(typeStr) {
+    if (!typeStr) return "Directo.";
+    const lower = typeStr.toLowerCase();
+    
+    if (lower.includes('inverso') || lower.includes('обратный')) {
+      if (lower.includes('positivo') || lower.includes('фильтр')) {
+        return "Inverso (Positivo).";
+      }
+      return "Inverso.";
+    } else {
+      if (lower.includes('negativo') || lower.includes('негативный')) {
+        return "Directo (Negativo).";
+      }
+      return "Directo.";
+    }
+  }
+
+  function extractData() {
+    const rawText = document.getElementById('rawInput').value;
+    
+    // Разбиваем текст на блоки по маркеру "* G3-Q"
+    const blocks = rawText.split(/\*\s*G3-Q/);
+    const questions = [];
+
+    for (let i = 1; i < blocks.length; i++) {
+      const block = blocks[i];
+      
+      const idMatch = block.match(/^0*(\d+)/);
+      const textMatch = block.match(/\*\s*(?:Текст|Texto):\s*([^\n\r]+)/i);
+      const categoryMatch = block.match(/\*\s*(?:Категория|Categoría):\s*([^\n\r]+)/i);
+      const typeMatch = block.match(/\*\s*(?:Тип вопроса|Tipo de pregunta):\s*([^\n\r]+)/i);
+      const scoresMatch = block.match(/\*\s*(?:Баллы|Puntuación):\s*([^\n\r]+)/i);
+
+      if (idMatch && textMatch) {
+        const id = parseInt(idMatch[1], 10);
+        const category = categoryMatch ? categoryMatch[1].trim() : "Sin clasificar";
+        
+        let rawTypeStr = typeMatch ? typeMatch[1].trim() : "";
+        let cleanType = translateType(rawTypeStr);
+        let isInverse = cleanType.toLowerCase().includes('inverso');
+
+        // Парсим строку баллов в удобный объект
+        let scoresObj = {};
+        if (scoresMatch) {
+          const scorePairs = scoresMatch[1].split('|');
+          scorePairs.forEach(pair => {
+            const [key, val] = pair.split('=');
+            if (key && val) {
+              scoresObj[key.trim()] = parseInt(val.trim(), 10);
+            }
+          });
+        }
+
+        questions.push({
+          id: id,
+          question: textMatch[1].trim(),
+          category: category,
+          domain: getDomainByCategory(category),
+          type: cleanType,
+          inverse: isInverse,
+          scores: scoresObj
+        });
+      }
+    }
+
+    questions.sort((a, b) => a.id - b.id);
+
+    const database = {
+      standard: "NOM-035-STPS-2018",
+      updatedAt: new Date().toISOString(),
+      questions: questions
+    };
+
+    renderJSON(database);
+  }
+
+  function renderJSON(obj) {
+    document.getElementById('count').textContent = `(Preguntas recopiladas: ${obj.questions.length})`;
+    
+    const jsonStr = JSON.stringify(obj, null, 2)
+      .replace(/"(.*?)":/g, '<span class="json-key">"$1"</span>:')
+      .replace(/: "(.*?)"/g, ': <span class="json-string">"$1"</span>')
+      .replace(/: (\d+)/g, ': <span class="json-number">$1</span>')
+      .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>');
+      
+    document.getElementById('jsonOutput').innerHTML = jsonStr;
+    document.getElementById('outputSection').style.display = 'block';
+    
+    window.rawJsonResult = JSON.stringify(obj, null, 2);
+  }
+
+  function copyJSON() {
+    navigator.clipboard.writeText(window.rawJsonResult).then(() => {
+      alert("¡JSON copiado al portapapeles!");
+    });
+  }
+</script>
+
+</body>
+</html>
