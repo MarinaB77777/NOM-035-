@@ -21,7 +21,7 @@
     .option-label input { margin-right: 12px; accent-color: var(--accent); }
 
     .btn-group { display: flex; justify-content: space-between; align-items: center; }
-    .btn { background: var(--accent); color: white; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s; }
+    .btn { background: var(--accent); color: white; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s; text-decoration: none; }
     .btn:hover { background: #1d4ed8; }
     .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
     
@@ -31,29 +31,39 @@
 <body>
 
 <div class="container" id="quizApp">
-  <div class="loader">Conectando con la base de datos y cargando cuestionario...</div>
+  <div class="loader">Verificando sesión y cargando reactivos NOM-035...</div>
 </div>
 
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-  // Подключение к Supabase
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-
-// Проверьте, чтобы строка URL была полной и находилась в кавычках:
-const supabase = createClient(
-  'https://hjmmphkxbnuxnpcbawpg.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
-);
+  const supabase = createClient(
+    'https://hjmmphkxbnuxnpcbawpg.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
+  );
 
   let currentQuestions = [];
   let currentIndex = 0;
-  let userAnswers = {}; // Хранилище ответов: { question_number: optionText }
+  let userAnswers = {}; 
+  let currentUser = null;
 
-  // Метрики контроля качества и таймингов
   let testStartTime = Date.now();
   let questionStartTimestamp = Date.now();
   let questionTimes = [];
+
+  async function checkAuthAndInit() {
+    // Проверяем, авторизован ли сотрудник через auth.html
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      alert('Por favor inicia sesión primero para mantener la confidencialidad.');
+      window.location.href = 'auth.html';
+      return;
+    }
+    
+    currentUser = session.user;
+    initQuiz();
+  }
 
   async function initQuiz() {
     try {
@@ -70,7 +80,6 @@ const supabase = createClient(
         category: q.category_name,
         domain: q.domain_name,
         inverse: q.is_inverse,
-        // Стандартные варианты ответов NOM-035 (Guía III) с баллами
         scores: q.is_inverse ? 
             { "Siempre": 4, "Casi siempre": 3, "Algunas veces": 2, "Casi nunca": 1, "Nunca": 0 } :
             { "Siempre": 0, "Casi siempre": 1, "Algunas veces": 2, "Casi nunca": 3, "Nunca": 4 }
@@ -80,7 +89,7 @@ const supabase = createClient(
     } catch (err) {
       document.getElementById('quizApp').innerHTML = `
         <h3 style="color: #991b1b;">Error al cargar el cuestionario</h3>
-        <p style="color: #64748b;">No se pudo conectar con Supabase. Verifica tus credenciales.</p>
+        <p style="color: #64748b;">No se pudo conectar con Supabase: ${err.message}</p>
       `;
       console.error(err);
     }
@@ -93,7 +102,7 @@ const supabase = createClient(
     }
 
     const q = currentQuestions[currentIndex];
-    const progress = ((currentIndex) / currentQuestions.length) * 100;
+    const progress = (currentIndex / currentQuestions.length) * 100;
     const selectedVal = userAnswers[q.id] || '';
 
     let optionsHtml = '';
@@ -119,7 +128,6 @@ const supabase = createClient(
     `;
   }
 
-  // Глобальные методы для навигации интерфейса
   window.saveAnswer = function(qId, val) {
     userAnswers[qId] = val;
   }
@@ -131,7 +139,6 @@ const supabase = createClient(
       return;
     }
 
-    // Фиксируем время, затраченное на вопрос
     let now = Date.now();
     questionTimes.push((now - questionStartTimestamp) / 1000);
     questionStartTimestamp = now;
@@ -147,29 +154,25 @@ const supabase = createClient(
     }
   }
 
-  // Алгоритм анализа качества ответов и поведенческих признаков
   function evaluateResponseQuality() {
     let totalTimeSec = (Date.now() - testStartTime) / 1000;
     let answersArray = Object.values(userAnswers);
     let totalQuestions = answersArray.length;
 
-    let isSpeeding = totalTimeSec < 180; // Менее 3 минут
-
+    let isSpeeding = totalTimeSec < 180;
     let frequencyMap = {};
     answersArray.forEach(ans => { frequencyMap[ans] = (frequencyMap[ans] || 0) + 1; });
     let maxRepetitions = Math.max(...Object.values(frequencyMap));
     let monotonyPercentage = maxRepetitions / totalQuestions;
-    let isMonotonous = monotonyPercentage > 0.85; // Монотонность более 85%
+    let isMonotonous = monotonyPercentage > 0.85;
 
     let ultraFastClicks = questionTimes.filter(t => t < 1.0).length;
-    let hasErraticClicks = ultraFastClicks > 12;
-
     let validityStatus = "Válido";
     let diagnosticFlags = [];
 
     if (isSpeeding) { validityStatus = "Revisión requerida (Tiempo insuficiente)"; diagnosticFlags.push("speeding"); }
     if (isMonotonous) { validityStatus = "No válido (Monotonía de respuestas)"; diagnosticFlags.push("straight_lining"); }
-    if (hasErraticClicks) { validityStatus = "Revisión requerida (Clics erráticos)"; diagnosticFlags.push("rapid_clicking"); }
+    if (ultraFastClicks > 12) { validityStatus = "Revisión requerida (Clics erráticos)"; diagnosticFlags.push("rapid_clicking"); }
 
     return {
       totalTimeSeconds: Math.round(totalTimeSec),
@@ -179,7 +182,6 @@ const supabase = createClient(
     };
   }
 
-  // Расчет баллов и завершение теста
   async function handleQuizCompletion() {
     document.getElementById('quizApp').innerHTML = `<div class="loader">Procesando dictamen y calculando riesgos...</div>`;
 
@@ -190,16 +192,13 @@ const supabase = createClient(
     currentQuestions.forEach(q => {
       const ans = userAnswers[q.id];
       const score = q.scores[ans] || 0;
-      
       totalScore += score;
-      
       domainScores[q.domain] = (domainScores[q.domain] || 0) + score;
       categoryScores[q.category] = (categoryScores[q.category] || 0) + score;
     });
 
     const qualityCheck = evaluateResponseQuality();
 
-    // Определение уровня общего риска (упрощенный расчет для передачи)
     let globalRiskText = "Bajo";
     if (totalScore >= 140) globalRiskText = "Muy Alto";
     else if (totalScore >= 99) globalRiskText = "Alto";
@@ -207,6 +206,7 @@ const supabase = createClient(
     else if (totalScore < 50) globalRiskText = "Nulo o Despreciable";
 
     const payloadToSupabase = {
+      user_id: currentUser ? currentUser.id : null,
       total_score: totalScore,
       global_risk: globalRiskText,
       domain_scores: domainScores,
@@ -221,7 +221,7 @@ const supabase = createClient(
     try {
       await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
     } catch (err) {
-      console.error("Modo local (sin inserción en nube):", err.message);
+      console.error("Error al guardar en Supabase:", err.message);
     }
 
     sessionStorage.setItem('nom035_last_result', JSON.stringify({
@@ -235,7 +235,7 @@ const supabase = createClient(
     window.location.href = 'resultados.html';
   }
 
-  initQuiz();
+  checkAuthAndInit();
 </script>
 
 </body>
