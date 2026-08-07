@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Usuario - NOM-035</title>
+  <style>
+    :root { --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --muted: #64748b; --accent: #2563eb; --border: #e2e8f0; --success: #16a34a; --warning: #ca8a04; --danger: #dc2626; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 900px; margin-top: 20px; }
+    
+    .card { background: var(--card); padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid var(--border); margin-bottom: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+    .header h2 { margin: 0; color: #0f172a; font-size: 22px; }
+    
+    .btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; text-decoration: none; transition: background 0.2s; display: inline-block; }
+    .btn:hover { background: #1d4ed8; }
+    .btn-secondary { background: #64748b; }
+    .btn-secondary:hover { background: #475569; }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .metric-card { background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
+    .metric-card h4 { margin: 0 0 8px 0; color: var(--muted); font-size: 13px; text-transform: uppercase; }
+    .metric-value { font-size: 22px; font-weight: bold; color: #0f172a; }
+
+    .section-title { font-size: 16px; font-weight: bold; color: #0f172a; margin-bottom: 15px; border-left: 4px solid var(--accent); padding-left: 10px; }
+    
+    .list-group { display: flex; flex-direction: column; gap: 10px; }
+    .list-item { display: flex; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+    
+    .loader { text-align: center; font-weight: bold; color: var(--muted); padding: 40px; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="dashboardApp">
+  <div class="loader">Cargando panel de control...</div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+  const supabase = createClient(
+    'https://hjmmphkxbnuxnpcbawpg.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
+  );
+
+  async function initDashboard() {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      window.location.href = 'auth.html';
+      return;
+    }
+
+    const user = session.user;
+
+    // Сначала пробуем взять из сессии (сохраненное сразу после теста), либо запрашиваем из базы
+    let resultData = null;
+    const localSaved = sessionStorage.getItem('nom035_last_result');
+
+    if (localSaved) {
+      resultData = JSON.parse(localSaved);
+    } else {
+      // Если в сессии пусто, подтягиваем последнюю запись пользователя из Supabase
+      const { data, error } = await supabase
+        .from('nom035_survey_results')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (data) {
+        resultData = {
+          totalScore: data.total_score,
+          globalRisk: data.global_risk,
+          domainScores: data.domain_scores,
+          categoryScores: data.category_scores,
+          totalTime: data.total_time_seconds,
+          validityStatus: data.validity_status
+        };
+      }
+    }
+
+    renderDashboard(user, resultData);
+  }
+
+  function renderDashboard(user, data) {
+    const app = document.getElementById('dashboardApp');
+
+    if (!data) {
+      app.innerHTML = `
+        <div class="card">
+          <div class="header">
+            <h2>Mi Panel NOM-035</h2>
+            <button id="logoutBtn" class="btn btn-secondary">Cerrar Sesión</button>
+          </div>
+          <p style="color: var(--muted); margin-bottom: 20px;">Aún no has realizado la evaluación psicosocial obligatoria.</p>
+          <a href="quiz.html" class="btn">Realizar Cuestionario (Guía III)</a>
+        </div>
+      `;
+      setupLogout();
+      return;
+    }
+
+    let domainsHtml = '';
+    if (data.domainScores) {
+      for (const [domain, score] of Object.entries(data.domainScores)) {
+        domainsHtml += `<div class="list-item"><span>${domain}</span><strong>${score} pts</strong></div>`;
+      }
+    }
+
+    let categoriesHtml = '';
+    const categories = data.categoryScores || data.category_scores;
+    if (categories) {
+      for (const [cat, score] of Object.entries(categories)) {
+        categoriesHtml += `<div class="list-item"><span>${cat}</span><strong>${score} pts</strong></div>`;
+      }
+    }
+
+    app.innerHTML = `
+      <div class="card">
+        <div class="header">
+          <div>
+            <h2>Panel de Resultados - NOM-035</h2>
+            <p style="margin: 5px 0 0 0; color: var(--muted); font-size: 14px;">${user.email}</p>
+          </div>
+          <button id="logoutBtn" class="btn btn-secondary">Cerrar Sesión</button>
+        </div>
+
+        <div class="summary-grid">
+          <div class="metric-card">
+            <h4>Puntuación Global</h4>
+            <div class="metric-value">${data.totalScore || data.total_score}</div>
+          </div>
+          <div class="metric-card">
+            <h4>Nivel de Riesgo</h4>
+            <div class="metric-value" style="color: var(--accent);">${data.globalRisk || data.global_risk || 'Calculado'}</div>
+          </div>
+          <div class="metric-card">
+            <h4>Estado de Validez</h4>
+            <div class="metric-value" style="font-size: 16px; margin-top: 5px;">${data.validityStatus || 'Válido'}</div>
+          </div>
+        </div>
+
+        <div class="section-title">Resultados por Categorías Oficiales</div>
+        <div class="list-group" style="margin-bottom: 25px;">
+          ${categoriesHtml || '<p style="color:var(--muted)">Sin datos de categorías</p>'}
+        </div>
+
+        <div class="section-title">Resultados detallados por Dominios</div>
+        <div class="list-group">
+          ${domainsHtml || '<p style="color:var(--muted)">Sin datos de dominios</p>'}
+        </div>
+      </div>
+    `;
+
+    setupLogout();
+  }
+
+  function setupLogout() {
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      sessionStorage.clear();
+      window.location.href = 'auth.html';
+    });
+  }
+
+  initDashboard();
+</script>
+
+</body>
+</html>
