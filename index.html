@@ -109,25 +109,25 @@
   </header>
 
   <div class="grid">
-    <!-- Кнопка 1 -->
+    <!-- Карточка 1: Авторизация -->
     <div class="card">
       <div>
-        <h3>🔐 Acceso y Registro Anónimo</h3>
-        <p>Punto de entrada para colaboradores mediante usuario único y contraseña (vía QR).</p>
+        <h3 id="c1-title">🔐 Acceso y Registro Anónimo</h3>
+        <p id="c1-desc">Punto de entrada para colaboradores mediante usuario único y contraseña (vía QR).</p>
       </div>
-      <a href="auth.html" class="btn purple">Ir al Acceso</a>
+      <a href="auth.html" class="btn purple" data-btn="auth">Ir al Acceso</a>
     </div>
 
-    <!-- Кнопка 2 -->
+    <!-- Карточка 2: Bridge -->
     <div class="card">
       <div>
         <h3 id="c2-title">⚙️ Research OS Bridge</h3>
         <p id="c2-desc">Conversión precisa de reactivos entre el formato estándar, Research OS y matriz de compatibilidad.</p>
       </div>
-      <a href="bridge.html" class="btn secondary" data-btn="open">Abrir Bridge</a>
+      <a href="bridge.html" class="btn secondary" data-btn="bridge">Abrir Bridge</a>
     </div>
 
-    <!-- Кнопка 3 -->
+    <!-- Карточка 3: Оценка -->
     <div class="card">
       <div>
         <h3 id="c3-title">📋 Simulador / Módulo de Evaluación</h3>
@@ -136,31 +136,31 @@
       <a href="evaluacion.html" class="btn" data-btn="start">Iniciar Evaluación</a>
     </div>
 
-    <!-- Переход 1 -->
+    <!-- Карточка 4: Доп. опросник -->
     <div class="card">
       <div>
         <h3 id="c4-title">📝 Módulo Adicional de Encuestas</h3>
         <p id="c4-desc">Salida hacia otro formato de cuestionario complementario para la evaluación integral de la plantilla.</p>
       </div>
-      <a href="extra_survey.html" class="btn warning" data-btn="open-survey">Abrir Segundo Oпросник</a>
+      <a href="extra_survey.html" class="btn warning" data-btn="survey">Abrir Segundo Cuestionario</a>
     </div>
 
-    <!-- Переход 2 -->
+    <!-- Карточка 5: Психологическая карта -->
     <div class="card">
       <div>
         <h3 id="c5-title">🗺️ Mapa Psicológico en Tiempo Real</h3>
         <p id="c5-desc">Monitoreo dinámico del clima laboral y niveles de riesgo psicosocial (En desarrollo activo).</p>
       </div>
-      <a href="psych_map.html" class="btn purple" data-btn="view-map">Ver Mapa en Vivo</a>
+      <a href="psych_map.html" class="btn purple" data-btn="map">Ver Mapa en Vivo</a>
     </div>
 
-    <!-- Переход 3 -->
+    <!-- Карточка 6: ИИ Аналитик -->
     <div class="card">
       <div>
         <h3 id="c6-title">🤖 IA Analítico</h3>
         <p id="c6-desc">Módulo de procesamiento inteligente para la generación automatizada de recomendaciones y reportes ejecutivos.</p>
       </div>
-      <a href="ai_analyst.html" class="btn purple" data-btn="open-ai">Abrir IA Analítico</a>
+      <a href="ai_analyst.html" class="btn purple" data-btn="ai">Abrir IA Analítico</a>
     </div>
   </div>
 </div>
@@ -175,8 +175,8 @@
       title: "Panel de Control NOM-035",
       mainTitle: "🚀 Panel de Control NOM-035",
       mainSubtitle: "Plataforma de gestión, conversión, evaluación e inteligencia analítica de riesgos psicosociales.",
-      c1Title: "🛠 Extractor NOM-035",
-      c1Desc: "Herramienta de extracción de preguntas con atributos completos desde texto plano a JSON estructurado.",
+      c1Title: "🔐 Acceso y Registro Anónimo",
+      c1Desc: "Punto de entrada para colaboradores mediante usuario único y contraseña (vía QR).",
       c2Title: "⚙️ Research OS Bridge",
       c2Desc: "Conversión precisa de reactivos entre el formato estándar, Research OS y matriz de compatibilidad.",
       c3Title: "📋 Simulador / Módulo de Evaluación",
@@ -187,7 +187,7 @@
       c5Desc: "Monitoreo dinámico del clima laboral y niveles de riesgo psicosocial (En desarrollo activo).",
       c6Title: "🤖 IA Analítico",
       c6Desc: "Módulo de procesamiento inteligente para la generación automatizada de recomendaciones y reportes ejecutivos.",
-      btnOpen: "Abrir Extractor",
+      btnAuth: "Ir al Acceso",
       btnBridge: "Abrir Bridge",
       btnStart: "Iniciar Evaluación",
       btnSurvey: "Abrir Segundo Cuestionario",
@@ -199,8 +199,8 @@
       title: "NOM-035 Control Panel",
       mainTitle: "🚀 NOM-035 Control Panel",
       mainSubtitle: "Management, conversion, evaluation, and analytical intelligence platform for psychosocial risks.",
-      c1Title: "🛠 NOM-035 Extractor",
-      c1Desc: "Tool for extracting questions with complete attributes from plain text into structured JSON.",
+      c1Title: "🔐 Access & Anonymous Registration",
+      c1Desc: "Entry point for collaborators using a unique username and password (via QR).",
       c2Title: "⚙️ Research OS Bridge",
       c2Desc: "Precise conversion of items between standard format, Research OS, and compatibility matrix.",
       c3Title: "📋 Simulator / Evaluation Module",
@@ -211,7 +211,7 @@
       c5Desc: "Dynamic monitoring of work climate and psychosocial risk levels (Under active development).",
       c6Title: "🤖 AI Analyst",
       c6Desc: "Intelligent processing module for automated generation of recommendations and executive reports.",
-      btnOpen: "Open Extractor",
+      btnAuth: "Go to Access",
       btnBridge: "Open Bridge",
       btnStart: "Start Evaluation",
       btnSurvey: "Open Second Survey",
@@ -249,13 +249,13 @@
     document.getElementById('c6-title').textContent = t.c6Title;
     document.getElementById('c6-desc').textContent = t.c6Desc;
 
-    // Кнопки
-    document.querySelectorAll('[data-btn="open"]')[0].textContent = t.btnOpen;
-    document.querySelectorAll('[data-btn="open"]')[1].textContent = t.btnBridge;
+    // Кнопки по уникальным data-атрибутам
+    document.querySelector('[data-btn="auth"]').textContent = t.btnAuth;
+    document.querySelector('[data-btn="bridge"]').textContent = t.btnBridge;
     document.querySelector('[data-btn="start"]').textContent = t.btnStart;
-    document.querySelector('[data-btn="open-survey"]').textContent = t.btnSurvey;
-    document.querySelector('[data-btn="view-map"]').textContent = t.btnMap;
-    document.querySelector('[data-btn="open-ai"]').textContent = t.btnAi;
+    document.querySelector('[data-btn="survey"]').textContent = t.btnSurvey;
+    document.querySelector('[data-btn="map"]').textContent = t.btnMap;
+    document.querySelector('[data-btn="ai"]').textContent = t.btnAi;
 
     document.getElementById('langBtn').textContent = t.langLabel;
     document.documentElement.lang = currentLang;
