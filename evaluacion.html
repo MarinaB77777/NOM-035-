@@ -57,7 +57,6 @@
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
-      // Пользователь не авторизован — даем выбор: войти или на главную
       document.getElementById('quizApp').innerHTML = `
         <h2 style="color: #0f172a; margin-top: 0;">Acceso Restringido</h2>
         <p style="color: var(--muted); line-height: 1.6; margin-bottom: 25px;">
@@ -75,7 +74,6 @@
     showWelcomeScreen();
   }
 
-  // Экран приветствия на странице опросника перед началом
   function showWelcomeScreen() {
     document.getElementById('quizApp').innerHTML = `
       <h2 style="color: #0f172a; margin-top: 0;">Evaluación de Factores de Riesgo Psicosocial (Guía III)</h2>
@@ -109,7 +107,9 @@
         id: q.question_number,
         question: q.question_text,
         category: q.category_name,
+        categoryId: q.category_id,
         domain: q.domain_name,
+        domainId: q.domain_id,
         inverse: q.is_inverse,
         scores: q.is_inverse ? 
             { "Siempre": 4, "Casi siempre": 3, "Algunas veces": 2, "Casi nunca": 1, "Nunca": 0 } :
@@ -215,7 +215,9 @@
   }
 
   async function handleQuizCompletion() {
-    document.getElementById('quizApp').innerHTML = `<div class="loader">Guardando resultados y generando reporte...</div>`;
+    document.getElementById('quizApp').innerHTML = `
+      <div class="loader">Procesando dictamen con tablas oficiales y guardando...</div>
+    `;
 
     let totalScore = 0;
     let domainScores = {};
@@ -225,46 +227,86 @@
       const ans = userAnswers[q.id];
       const score = q.scores[ans] || 0;
       totalScore += score;
-      domainScores[q.domain] = (domainScores[q.domain] || 0) + score;
-      categoryScores[q.category] = (categoryScores[q.category] || 0) + score;
+      domainScores[q.domain] = {
+        score: (domainScores[q.domain]?.score || 0) + score,
+        domainId: q.domainId
+      };
+      categoryScores[q.category] = {
+        score: (categoryScores[q.category]?.score || 0) + score,
+        categoryId: q.categoryId
+      };
     });
 
     const qualityCheck = evaluateResponseQuality();
 
-    let globalRiskText = "Bajo";
-    if (totalScore >= 140) globalRiskText = "Muy Alto";
-    else if (totalScore >= 99) globalRiskText = "Alto";
-    else if (totalScore >= 75) globalRiskText = "Medio";
-    else if (totalScore < 50) globalRiskText = "Nulo o Despreciable";
-
-    const payloadToSupabase = {
-      user_id: currentUser ? currentUser.id : null,
-      total_score: totalScore,
-      global_risk: globalRiskText,
-      domain_scores: domainScores,
-      category_scores: categoryScores,
-      total_time_seconds: qualityCheck.totalTimeSeconds,
-      validity_status: qualityCheck.validityStatus,
-      quality_flags: qualityCheck.flags,
-      audit_metrics: qualityCheck.metrics,
-      created_at: new Date().toISOString()
-    };
-
     try {
+      const [domainRiskRes, categoryRiskRes, globalRiskRes] = await Promise.all([
+        supabase.from('nom035_tabla_4_domain_risk').select('*'),
+        supabase.from('nom035_tabla_5_category_risk').select('*'),
+        supabase.from('nom035_tabla_6_global_risk').select('*')
+      ]);
+
+      if (domainRiskRes.error) throw domainRiskRes.error;
+      if (categoryRiskRes.error) throw categoryRiskRes.error;
+      if (globalRiskRes.error) throw globalRiskRes.error;
+
+      const domainRules = domainRiskRes.data;
+      const categoryRules = categoryRiskRes.data;
+      const globalRules = globalRiskRes.data;
+
+      function getRisk(score, rules, idKey, targetId) {
+        const rule = rules.find(r => 
+          r[idKey] === targetId && 
+          score >= r.min_score && 
+          score <= r.max_score
+        );
+        return rule ? { risk: rule.risk_level, css: rule.css_class } : { risk: "Despreciable", css: "green" };
+      }
+
+      let evaluatedDomains = {};
+      for (const [domainName, data] of Object.entries(domainScores)) {
+        const evaluated = getRisk(data.score, domainRules, 'domain_id', data.domainId);
+        evaluatedDomains[domainName] = { score: data.score, ...evaluated };
+      }
+
+      let evaluatedCategories = {};
+      for (const [catName, data] of Object.entries(categoryScores)) {
+        const evaluated = getRisk(data.score, categoryRules, 'category_id', data.categoryId);
+        evaluatedCategories[catName] = { score: data.score, ...evaluated };
+      }
+
+      const globalRule = globalRules.find(r => totalScore >= r.min_score && totalScore <= r.max_score);
+      const globalRiskText = globalRule ? globalRule.risk_level : "Bajo";
+
+      const payloadToSupabase = {
+        user_id: currentUser ? currentUser.id : null,
+        total_score: totalScore,
+        global_risk: globalRiskText,
+        domain_scores: evaluatedDomains,
+        category_scores: evaluatedCategories,
+        total_time_seconds: qualityCheck.totalTimeSeconds,
+        validity_status: qualityCheck.validityStatus,
+        quality_flags: qualityCheck.flags,
+        audit_metrics: qualityCheck.metrics,
+        created_at: new Date().toISOString()
+      };
+
       await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
+
+      sessionStorage.setItem('nom035_last_result', JSON.stringify({
+        totalScore,
+        globalRisk: globalRiskText,
+        domainScores: evaluatedDomains,
+        categoryScores: evaluatedCategories,
+        totalTime: qualityCheck.totalTimeSeconds,
+        validityStatus: qualityCheck.validityStatus
+      }));
+
     } catch (err) {
-      console.error("Error al guardar en Supabase:", err.message);
+      console.error("Error al calcular riesgos con las tablas oficiales:", err.message);
+      alert("Hubo un error al procesar las tablas oficiales de riesgo.");
     }
 
-    sessionStorage.setItem('nom035_last_result', JSON.stringify({
-      totalScore,
-      domainScores,
-      categoryScores,
-      totalTime: qualityCheck.totalTimeSeconds,
-      validityStatus: qualityCheck.validityStatus
-    }));
-
-    // Подменяем историю и перенаправляем в личный кабинет (например, dashboard.html или perfil.html)
     history.replaceState(null, '', 'dashboard.html');
     window.location.href = 'dashboard.html';
   }
