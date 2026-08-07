@@ -267,7 +267,8 @@
       const domainRules = domainRiskRes.data;
       const categoryRules = categoryRiskRes.data;
       const globalRules = globalRiskRes.data;
-
+      console.log("Правила доменов из базы:", domainRules);
+      console.log("Баллы пользователя по доменам:", domainScores);
       function getRisk(score, rules, idKey, targetId) {
         const numScore = Number(score);
         const numTargetId = Number(targetId);
