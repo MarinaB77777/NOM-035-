@@ -3,224 +3,263 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Evaluación NOM-035 - Guía III</title>
+  <title id="page-title">Panel de Control NOM-035</title>
   <style>
-    :root { --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --muted: #64748b; --accent: #2563eb; --border: #e2e8f0; }
-    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 85vh; margin: 0; }
-    .container { width: 100%; max-width: 750px; background: var(--card); padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid var(--border); }
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --purple: #8b5cf6;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .container { max-width: 1000px; margin: 0 auto; flex: 1; width: 100%; }
+    header { text-align: center; margin-bottom: 40px; position: relative; }
+    h1 { margin: 0 0 10px 0; font-size: 28px; color: #f1f5f9; }
+    p { color: var(--text-muted); font-size: 15px; margin: 0; }
     
-    .progress-bar { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-bottom: 25px; overflow: hidden; }
-    .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s ease; }
-    
-    .question-counter { font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; margin-bottom: 8px; }
-    h3 { font-size: 18px; color: #0f172a; margin-top: 0; margin-bottom: 20px; line-height: 1.5; }
-    
-    .options-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px; }
-    .option-label { display: flex; align-items: center; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; transition: all 0.2s; font-size: 15px; }
-    .option-label:hover { background: #f8fafc; border-color: var(--accent); }
-    .option-label input { margin-right: 12px; accent-color: var(--accent); }
+    .lang-switcher {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 6px 12px;
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .lang-switcher:hover { border-color: var(--accent); }
 
-    .btn-group { display: flex; justify-content: space-between; align-items: center; }
-    .btn { background: var(--accent); color: white; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s; text-decoration: none; }
-    .btn:hover { background: #1d4ed8; }
-    .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+    }
+    .card h3 { margin-top: 0; font-size: 18px; color: #f1f5f9; display: flex; align-items: center; gap: 10px; }
+    .card p { font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
     
-    .loader { text-align: center; font-weight: bold; color: var(--muted); padding: 40px; }
+    .btn {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      text-align: center;
+      transition: background-color 0.2s;
+      display: inline-block;
+    }
+    .btn:hover { background-color: var(--accent-hover); }
+    .btn.secondary { background-color: #475569; }
+    .btn.secondary:hover { background-color: #334155; }
+    .btn.purple { background-color: var(--purple); }
+    .btn.purple:hover { background-color: #7c3aed; }
+    .btn.warning { background-color: var(--warning); color: #0f172a; font-weight: bold; }
+    .btn.warning:hover { background-color: #d97706; }
+
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 13px;
+      letter-spacing: 0.5px;
+    }
   </style>
 </head>
 <body>
 
-<div class="container" id="quizApp">
-  <div class="loader">Conectando con Supabase y cargando los 72 reactivos...</div>
+<div class="container">
+  <header>
+    <button class="lang-switcher" onclick="toggleLanguage()" id="langBtn">🇪🇸 ES / 🇬🇧 EN</button>
+    <h1 id="main-title">🚀 Panel de Control NOM-035</h1>
+    <p id="main-subtitle">Plataforma de gestión, conversión, evaluación e inteligencia analítica de riesgos psicosociales.</p>
+  </header>
+
+  <div class="grid">
+    <!-- Кнопка 1 -->
+    <div class="card">
+      <div>
+        <h3>🔐 Acceso y Registro Anónimo</h3>
+        <p>Punto de entrada para colaboradores mediante usuario único y contraseña (vía QR).</p>
+      </div>
+      <a href="auth.html" class="btn purple">Ir al Acceso</a>
+    </div>
+
+    <!-- Кнопка 2 -->
+    <div class="card">
+      <div>
+        <h3 id="c2-title">⚙️ Research OS Bridge</h3>
+        <p id="c2-desc">Conversión precisa de reactivos entre el formato estándar, Research OS y matriz de compatibilidad.</p>
+      </div>
+      <a href="bridge.html" class="btn secondary" data-btn="open">Abrir Bridge</a>
+    </div>
+
+    <!-- Кнопка 3 -->
+    <div class="card">
+      <div>
+        <h3 id="c3-title">📋 Simulador / Módulo de Evaluación</h3>
+        <p id="c3-desc">Cuestionario confidencial evaluado estrictamente bajo las tablas oficiales de la NOM-035 (Guía III).</p>
+      </div>
+      <a href="evaluacion.html" class="btn" data-btn="start">Iniciar Evaluación</a>
+    </div>
+
+    <!-- Переход 1 -->
+    <div class="card">
+      <div>
+        <h3 id="c4-title">📝 Módulo Adicional de Encuestas</h3>
+        <p id="c4-desc">Salida hacia otro formato de cuestionario complementario para la evaluación integral de la plantilla.</p>
+      </div>
+      <a href="extra_survey.html" class="btn warning" data-btn="open-survey">Abrir Segundo Oпросник</a>
+    </div>
+
+    <!-- Переход 2 -->
+    <div class="card">
+      <div>
+        <h3 id="c5-title">🗺️ Mapa Psicológico en Tiempo Real</h3>
+        <p id="c5-desc">Monitoreo dinámico del clima laboral y niveles de riesgo psicosocial (En desarrollo activo).</p>
+      </div>
+      <a href="psych_map.html" class="btn purple" data-btn="view-map">Ver Mapa en Vivo</a>
+    </div>
+
+    <!-- Переход 3 -->
+    <div class="card">
+      <div>
+        <h3 id="c6-title">🤖 IA Analítico</h3>
+        <p id="c6-desc">Módulo de procesamiento inteligente para la generación automatizada de recomendaciones y reportes ejecutivos.</p>
+      </div>
+      <a href="ai_analyst.html" class="btn purple" data-btn="open-ai">Abrir IA Analítico</a>
+    </div>
+  </div>
 </div>
 
-<script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+<footer>
+  CRM Sharks + Gemini + TU UNIVERSIDAD PODRÍA ESTAR AQUÍ
+</footer>
 
-  // Подключение к Supabase (замените на ваши реальные ключи, если они отличаются)
-
-const supabase = createClient(
-  'https://hjmmphkxbnuxnpcbawpg.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
-);
-  let currentQuestions = [];
-  let currentIndex = 0;
-  let userAnswers = {}; 
-
-  let testStartTime = Date.now();
-  let questionStartTimestamp = Date.now();
-  let questionTimes = [];
-
-  async function initQuiz() {
-    try {
-      const { data, error } = await supabase
-        .from('v_nom035_questionnaire_map')
-        .select('*')
-        .order('question_number', { ascending: true });
-
-      if (error) throw error;
-
-      currentQuestions = data.map(q => ({
-        id: q.question_number,
-        question: q.question_text,
-        category: q.category_name,
-        domain: q.domain_name,
-        inverse: q.is_inverse,
-        scores: q.is_inverse ? 
-            { "Siempre": 4, "Casi siempre": 3, "Algunas veces": 2, "Casi nunca": 1, "Nunca": 0 } :
-            { "Siempre": 0, "Casi siempre": 1, "Algunas veces": 2, "Casi nunca": 3, "Nunca": 4 }
-      }));
-
-      renderQuestion();
-    } catch (err) {
-      document.getElementById('quizApp').innerHTML = `
-        <h3 style="color: #991b1b;">Error al cargar el cuestionario</h3>
-        <p style="color: #64748b;">No se pudo conectar con Supabase: ${err.message}</p>
-      `;
-      console.error(err);
+<script>
+  const translations = {
+    es: {
+      title: "Panel de Control NOM-035",
+      mainTitle: "🚀 Panel de Control NOM-035",
+      mainSubtitle: "Plataforma de gestión, conversión, evaluación e inteligencia analítica de riesgos psicosociales.",
+      c1Title: "🛠 Extractor NOM-035",
+      c1Desc: "Herramienta de extracción de preguntas con atributos completos desde texto plano a JSON estructurado.",
+      c2Title: "⚙️ Research OS Bridge",
+      c2Desc: "Conversión precisa de reactivos entre el formato estándar, Research OS y matriz de compatibilidad.",
+      c3Title: "📋 Simulador / Módulo de Evaluación",
+      c3Desc: "Cuestionario confidencial evaluado estrictamente bajo las tablas oficiales de la NOM-035 (Guía III).",
+      c4Title: "📝 Módulo Adicional de Encuestas",
+      c4Desc: "Salida hacia otro formato de cuestionario complementario para la evaluación integral de la plantilla.",
+      c5Title: "🗺️ Mapa Psicológico en Tiempo Real",
+      c5Desc: "Monitoreo dinámico del clima laboral y niveles de riesgo psicosocial (En desarrollo activo).",
+      c6Title: "🤖 IA Analítico",
+      c6Desc: "Módulo de procesamiento inteligente para la generación automatizada de recomendaciones y reportes ejecutivos.",
+      btnOpen: "Abrir Extractor",
+      btnBridge: "Abrir Bridge",
+      btnStart: "Iniciar Evaluación",
+      btnSurvey: "Abrir Segundo Cuestionario",
+      btnMap: "Ver Mapa en Vivo",
+      btnAi: "Abrir IA Analítico",
+      langLabel: "🇬🇧 EN / 🇪🇸 ES"
+    },
+    en: {
+      title: "NOM-035 Control Panel",
+      mainTitle: "🚀 NOM-035 Control Panel",
+      mainSubtitle: "Management, conversion, evaluation, and analytical intelligence platform for psychosocial risks.",
+      c1Title: "🛠 NOM-035 Extractor",
+      c1Desc: "Tool for extracting questions with complete attributes from plain text into structured JSON.",
+      c2Title: "⚙️ Research OS Bridge",
+      c2Desc: "Precise conversion of items between standard format, Research OS, and compatibility matrix.",
+      c3Title: "📋 Simulator / Evaluation Module",
+      c3Desc: "Confidential questionnaire evaluated strictly under official NOM-035 tables (Guide III).",
+      c4Title: "📝 Additional Survey Module",
+      c4Desc: "Access to another complementary questionnaire format for comprehensive staff evaluation.",
+      c5Title: "🗺️ Real-Time Psychological Map",
+      c5Desc: "Dynamic monitoring of work climate and psychosocial risk levels (Under active development).",
+      c6Title: "🤖 AI Analyst",
+      c6Desc: "Intelligent processing module for automated generation of recommendations and executive reports.",
+      btnOpen: "Open Extractor",
+      btnBridge: "Open Bridge",
+      btnStart: "Start Evaluation",
+      btnSurvey: "Open Second Survey",
+      btnMap: "View Live Map",
+      btnAi: "Open AI Analyst",
+      langLabel: "🇪🇸 ES / 🇬🇧 EN"
     }
+  };
+
+  let currentLang = 'es';
+
+  function toggleLanguage() {
+    currentLang = currentLang === 'es' ? 'en' : 'es';
+    const t = translations[currentLang];
+
+    document.getElementById('page-title').textContent = t.title;
+    document.getElementById('main-title').textContent = t.mainTitle;
+    document.getElementById('main-subtitle').textContent = t.mainSubtitle;
+    
+    document.getElementById('c1-title').textContent = t.c1Title;
+    document.getElementById('c1-desc').textContent = t.c1Desc;
+    
+    document.getElementById('c2-title').textContent = t.c2Title;
+    document.getElementById('c2-desc').textContent = t.c2Desc;
+    
+    document.getElementById('c3-title').textContent = t.c3Title;
+    document.getElementById('c3-desc').textContent = t.c3Desc;
+    
+    document.getElementById('c4-title').textContent = t.c4Title;
+    document.getElementById('c4-desc').textContent = t.c4Desc;
+    
+    document.getElementById('c5-title').textContent = t.c5Title;
+    document.getElementById('c5-desc').textContent = t.c5Desc;
+    
+    document.getElementById('c6-title').textContent = t.c6Title;
+    document.getElementById('c6-desc').textContent = t.c6Desc;
+
+    // Кнопки
+    document.querySelectorAll('[data-btn="open"]')[0].textContent = t.btnOpen;
+    document.querySelectorAll('[data-btn="open"]')[1].textContent = t.btnBridge;
+    document.querySelector('[data-btn="start"]').textContent = t.btnStart;
+    document.querySelector('[data-btn="open-survey"]').textContent = t.btnSurvey;
+    document.querySelector('[data-btn="view-map"]').textContent = t.btnMap;
+    document.querySelector('[data-btn="open-ai"]').textContent = t.btnAi;
+
+    document.getElementById('langBtn').textContent = t.langLabel;
+    document.documentElement.lang = currentLang;
   }
-
-  function renderQuestion() {
-    if (currentIndex >= currentQuestions.length) {
-      handleQuizCompletion();
-      return;
-    }
-
-    const q = currentQuestions[currentIndex];
-    const progress = (currentIndex / currentQuestions.length) * 100;
-    const selectedVal = userAnswers[q.id] || '';
-
-    let optionsHtml = '';
-    for (const optText in q.scores) {
-      const checked = selectedVal === optText ? 'checked' : '';
-      optionsHtml += `
-        <label class="option-label">
-          <input type="radio" name="current_option" value="${optText}" ${checked} onchange="window.saveAnswer(${q.id}, '${optText}')">
-          ${optText}
-        </label>
-      `;
-    }
-
-    document.getElementById('quizApp').innerHTML = `
-      <div class="progress-bar"><div class="progress-fill" style="width: ${progress}%"></div></div>
-      <div class="question-counter">Pregunta ${currentIndex + 1} de ${currentQuestions.length}</div>
-      <h3>${q.question}</h3>
-      <div class="options-list">${optionsHtml}</div>
-      <div class="btn-group">
-        <button class="btn" id="prevBtn" ${currentIndex === 0 ? 'disabled' : ''} onclick="window.prevQuestion()">Anterior</button>
-        <button class="btn" id="nextBtn" onclick="window.nextQuestion()">${currentIndex === currentQuestions.length - 1 ? 'Finalizar y Evaluar' : 'Siguiente'}</button>
-      </div>
-    `;
-  }
-
-  window.saveAnswer = function(qId, val) {
-    userAnswers[qId] = val;
-  }
-
-  window.nextQuestion = function() {
-    const q = currentQuestions[currentIndex];
-    if (!userAnswers[q.id]) {
-      alert('Por favor selecciona una opción antes de continuar.');
-      return;
-    }
-
-    let now = Date.now();
-    questionTimes.push((now - questionStartTimestamp) / 1000);
-    questionStartTimestamp = now;
-
-    currentIndex++;
-    renderQuestion();
-  }
-
-  window.prevQuestion = function() {
-    if (currentIndex > 0) {
-      currentIndex--;
-      renderQuestion();
-    }
-  }
-
-  function evaluateResponseQuality() {
-    let totalTimeSec = (Date.now() - testStartTime) / 1000;
-    let answersArray = Object.values(userAnswers);
-    let totalQuestions = answersArray.length;
-
-    let isSpeeding = totalTimeSec < 180;
-    let frequencyMap = {};
-    answersArray.forEach(ans => { frequencyMap[ans] = (frequencyMap[ans] || 0) + 1; });
-    let maxRepetitions = Math.max(...Object.values(frequencyMap));
-    let monotonyPercentage = maxRepetitions / totalQuestions;
-    let isMonotonous = monotonyPercentage > 0.85;
-
-    let ultraFastClicks = questionTimes.filter(t => t < 1.0).length;
-    let validityStatus = "Válido";
-    let diagnosticFlags = [];
-
-    if (isSpeeding) { validityStatus = "Revisión requerida (Tiempo insuficiente)"; diagnosticFlags.push("speeding"); }
-    if (isMonotonous) { validityStatus = "No válido (Monotonía de respuestas)"; diagnosticFlags.push("straight_lining"); }
-    if (ultraFastClicks > 12) { validityStatus = "Revisión requerida (Clics erráticos)"; diagnosticFlags.push("rapid_clicking"); }
-
-    return {
-      totalTimeSeconds: Math.round(totalTimeSec),
-      validityStatus: validityStatus,
-      flags: diagnosticFlags,
-      metrics: { monotonyRate: +(monotonyPercentage * 100).toFixed(1) + "%", fastClicksCount: ultraFastClicks }
-    };
-  }
-
-  async function handleQuizCompletion() {
-    document.getElementById('quizApp').innerHTML = `<div class="loader">Procesando dictamen y calculando riesgos...</div>`;
-
-    let totalScore = 0;
-    let domainScores = {};
-    let categoryScores = {};
-
-    currentQuestions.forEach(q => {
-      const ans = userAnswers[q.id];
-      const score = q.scores[ans] || 0;
-      totalScore += score;
-      domainScores[q.domain] = (domainScores[q.domain] || 0) + score;
-      categoryScores[q.category] = (categoryScores[q.category] || 0) + score;
-    });
-
-    const qualityCheck = evaluateResponseQuality();
-
-    let globalRiskText = "Bajo";
-    if (totalScore >= 140) globalRiskText = "Muy Alto";
-    else if (totalScore >= 99) globalRiskText = "Alto";
-    else if (totalScore >= 75) globalRiskText = "Medio";
-    else if (totalScore < 50) globalRiskText = "Nulo o Despreciable";
-
-    const payloadToSupabase = {
-      total_score: totalScore,
-      global_risk: globalRiskText,
-      domain_scores: domainScores,
-      category_scores: categoryScores,
-      total_time_seconds: qualityCheck.totalTimeSeconds,
-      validity_status: qualityCheck.validityStatus,
-      quality_flags: qualityCheck.flags,
-      audit_metrics: qualityCheck.metrics,
-      created_at: new Date().toISOString()
-    };
-
-    try {
-      await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
-    } catch (err) {
-      console.error("Modo local (sin inserción en nube):", err.message);
-    }
-
-    sessionStorage.setItem('nom035_last_result', JSON.stringify({
-      totalScore,
-      domainScores,
-      categoryScores,
-      totalTime: qualityCheck.totalTimeSeconds,
-      validityStatus: qualityCheck.validityStatus
-    }));
-
-    window.location.href = 'resultados.html';
-  }
-
-  initQuiz();
 </script>
 
 </body>
