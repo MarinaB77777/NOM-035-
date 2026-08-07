@@ -21,9 +21,11 @@
     .option-label input { margin-right: 12px; accent-color: var(--accent); }
 
     .btn-group { display: flex; justify-content: space-between; align-items: center; }
-    .btn { background: var(--accent); color: white; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s; text-decoration: none; }
+    .btn { background: var(--accent); color: white; border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s; text-decoration: none; display: inline-block; text-align: center; }
     .btn:hover { background: #1d4ed8; }
     .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .btn-secondary { background: #64748b; }
+    .btn-secondary:hover { background: #475569; }
     
     .loader { text-align: center; font-weight: bold; color: var(--muted); padding: 40px; }
   </style>
@@ -31,7 +33,7 @@
 <body>
 
 <div class="container" id="quizApp">
-  <div class="loader">Verificando sesión y cargando reactivos NOM-035...</div>
+  <div class="loader">Verificando sesión...</div>
 </div>
 
 <script type="module">
@@ -47,25 +49,54 @@
   let userAnswers = {}; 
   let currentUser = null;
 
-  let testStartTime = Date.now();
-  let questionStartTimestamp = Date.now();
+  let testStartTime = null;
+  let questionStartTimestamp = null;
   let questionTimes = [];
 
   async function checkAuthAndInit() {
-    // Проверяем, авторизован ли сотрудник через auth.html
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
-      alert('Por favor inicia sesión primero para mantener la confidencialidad.');
-      window.location.href = 'auth.html';
+      // Пользователь не авторизован — даем выбор: войти или на главную
+      document.getElementById('quizApp').innerHTML = `
+        <h2 style="color: #0f172a; margin-top: 0;">Acceso Restringido</h2>
+        <p style="color: var(--muted); line-height: 1.6; margin-bottom: 25px;">
+          Para realizar la evaluación NOM-035 de forma confidencial, es necesario iniciar sesión en el sistema.
+        </p>
+        <div style="display: flex; gap: 15px;">
+          <a href="auth.html" class="btn" style="flex: 1;">Iniciar Sesión</a>
+          <a href="index.html" class="btn btn-secondary" style="flex: 1;">Ir al Inicio</a>
+        </div>
+      `;
       return;
     }
     
     currentUser = session.user;
-    initQuiz();
+    showWelcomeScreen();
+  }
+
+  // Экран приветствия на странице опросника перед началом
+  function showWelcomeScreen() {
+    document.getElementById('quizApp').innerHTML = `
+      <h2 style="color: #0f172a; margin-top: 0;">Evaluación de Factores de Riesgo Psicosocial (Guía III)</h2>
+      <p style="color: var(--muted); line-height: 1.6; margin-bottom: 25px;">
+        Está a punto de iniciar el cuestionario oficial <strong>NOM-035-STPS-2018</strong>. Sus respuestas son estrictamente confidenciales. Consta de 72 reactivos y se recomienda completarlo sin interrupciones.
+      </p>
+      <div style="display: flex; gap: 15px;">
+        <button class="btn" id="startQuizBtn" style="flex: 2; padding: 14px;">Comenzar Cuestionario</button>
+        <a href="index.html" class="btn btn-secondary" style="flex: 1; padding: 14px; line-height: 1.2;">Regresar</a>
+      </div>
+    `;
+
+    document.getElementById('startQuizBtn').addEventListener('click', () => {
+      testStartTime = Date.now();
+      questionStartTimestamp = Date.now();
+      initQuiz();
+    });
   }
 
   async function initQuiz() {
+    document.getElementById('quizApp').innerHTML = `<div class="loader">Cargando reactivos de la norma...</div>`;
     try {
       const { data, error } = await supabase
         .from('v_nom035_questionnaire_map')
@@ -90,6 +121,7 @@
       document.getElementById('quizApp').innerHTML = `
         <h3 style="color: #991b1b;">Error al cargar el cuestionario</h3>
         <p style="color: #64748b;">No se pudo conectar con Supabase: ${err.message}</p>
+        <a href="index.html" class="btn btn-secondary" style="margin-top: 15px;">Volver al Inicio</a>
       `;
       console.error(err);
     }
@@ -122,8 +154,8 @@
       <h3>${q.question}</h3>
       <div class="options-list">${optionsHtml}</div>
       <div class="btn-group">
-        <button class="btn" id="prevBtn" ${currentIndex === 0 ? 'disabled' : ''} onclick="window.prevQuestion()">Anterior</button>
-        <button class="btn" id="nextBtn" onclick="window.nextQuestion()">${currentIndex === currentQuestions.length - 1 ? 'Finalizar y Evaluar' : 'Siguiente'}</button>
+        <button class="btn btn-secondary" id="prevBtn" ${currentIndex === 0 ? 'disabled' : ''} onclick="window.prevQuestion()">Anterior</button>
+        <button class="btn" id="nextBtn" onclick="window.nextQuestion()">${currentIndex === currentQuestions.length - 1 ? 'Finalizar y Guardar' : 'Siguiente'}</button>
       </div>
     `;
   }
@@ -183,7 +215,7 @@
   }
 
   async function handleQuizCompletion() {
-    document.getElementById('quizApp').innerHTML = `<div class="loader">Procesando dictamen y calculando riesgos...</div>`;
+    document.getElementById('quizApp').innerHTML = `<div class="loader">Guardando resultados y generando reporte...</div>`;
 
     let totalScore = 0;
     let domainScores = {};
@@ -232,7 +264,9 @@
       validityStatus: qualityCheck.validityStatus
     }));
 
-    window.location.href = 'resultados.html';
+    // Подменяем историю и перенаправляем в личный кабинет (например, dashboard.html или perfil.html)
+    history.replaceState(null, '', 'dashboard.html');
+    window.location.href = 'dashboard.html';
   }
 
   checkAuthAndInit();
