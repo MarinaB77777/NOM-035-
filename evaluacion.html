@@ -255,14 +255,17 @@
       const globalRules = globalRiskRes.data;
 
       function getRisk(score, rules, idKey, targetId) {
+        const numScore = Number(score);
+        const numTargetId = Number(targetId);
+
         const rule = rules.find(r => 
-          r[idKey] === targetId && 
-          score >= r.min_score && 
-          score <= r.max_score
+          Number(r[idKey]) === numTargetId && 
+          numScore >= Number(r.min_score) && 
+          numScore <= Number(r.max_score)
         );
         return rule ? { risk: rule.risk_level, css: rule.css_class } : { risk: "Despreciable", css: "green" };
       }
-
+      
       let evaluatedDomains = {};
       for (const [domainName, data] of Object.entries(domainScores)) {
         const evaluated = getRisk(data.score, domainRules, 'domain_id', data.domainId);
