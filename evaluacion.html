@@ -53,6 +53,28 @@
   let questionStartTimestamp = null;
   let questionTimes = [];
 
+  // Официальные ID доменов и категорий по стандарту Guía III
+  const domainIdMap = {
+    "Condiciones en el ambiente de trabajo": 1,
+    "Carga de trabajo": 2,
+    "Falta de control sobre el trabajo": 3,
+    "Jornada de trabajo": 4,
+    "Interferencia en la relación trabajo-familia": 5,
+    "Liderazgo": 6,
+    "Relaciones en el trabajo": 7,
+    "Violencia laboral": 8,
+    "Reconocimiento del desempeño": 9,
+    "Insuficiente sentido de pertenencia e inestabilidad": 10
+  };
+
+  const categoryIdMap = {
+    "Ambiente de trabajo": 1,
+    "Factores propios de la actividad": 2,
+    "Organización del tiempo de trabajo": 3,
+    "Liderazgo y relaciones en el trabajo": 4,
+    "Entorno organizacional": 5
+  };
+
   async function checkAuthAndInit() {
     const { data: { session } } = await supabase.auth.getSession();
     
@@ -107,9 +129,7 @@
         id: q.question_number,
         question: q.question_text,
         category: q.category_name,
-        categoryId: q.category_id,
         domain: q.domain_name,
-        domainId: q.domain_id,
         inverse: q.is_inverse,
         scores: q.is_inverse ? 
             { "Siempre": 4, "Casi siempre": 3, "Algunas veces": 2, "Casi nunca": 1, "Nunca": 0 } :
@@ -227,14 +247,8 @@
       const ans = userAnswers[q.id];
       const score = q.scores[ans] || 0;
       totalScore += score;
-      domainScores[q.domain] = {
-        score: (domainScores[q.domain]?.score || 0) + score,
-        domainId: q.domainId
-      };
-      categoryScores[q.category] = {
-        score: (categoryScores[q.category]?.score || 0) + score,
-        categoryId: q.categoryId
-      };
+      domainScores[q.domain] = (domainScores[q.domain] || 0) + score;
+      categoryScores[q.category] = (categoryScores[q.category] || 0) + score;
     });
 
     const qualityCheck = evaluateResponseQuality();
@@ -265,20 +279,22 @@
         );
         return rule ? { risk: rule.risk_level, css: rule.css_class } : { risk: "Despreciable", css: "green" };
       }
-      
+
       let evaluatedDomains = {};
-      for (const [domainName, data] of Object.entries(domainScores)) {
-        const evaluated = getRisk(data.score, domainRules, 'domain_id', data.domainId);
-        evaluatedDomains[domainName] = { score: data.score, ...evaluated };
+      for (const [domainName, score] of Object.entries(domainScores)) {
+        const domainId = domainIdMap[domainName] || 1;
+        const evaluated = getRisk(score, domainRules, 'domain_id', domainId);
+        evaluatedDomains[domainName] = { score, ...evaluated };
       }
 
       let evaluatedCategories = {};
-      for (const [catName, data] of Object.entries(categoryScores)) {
-        const evaluated = getRisk(data.score, categoryRules, 'category_id', data.categoryId);
-        evaluatedCategories[catName] = { score: data.score, ...evaluated };
+      for (const [catName, score] of Object.entries(categoryScores)) {
+        const catId = categoryIdMap[catName] || 1;
+        const evaluated = getRisk(score, categoryRules, 'category_id', catId);
+        evaluatedCategories[catName] = { score, ...evaluated };
       }
 
-      const globalRule = globalRules.find(r => totalScore >= r.min_score && totalScore <= r.max_score);
+      const globalRule = globalRules.find(r => Number(totalScore) >= Number(r.min_score) && Number(totalScore) <= Number(r.max_score));
       const globalRiskText = globalRule ? globalRule.risk_level : "Bajo";
 
       const payloadToSupabase = {
