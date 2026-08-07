@@ -38,7 +38,13 @@
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
   // Подключение к Supabase
-  const supabase = createClient('SUPABASE_URL', 'SUPABASE_ANON_KEY')
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+// Проверьте, чтобы строка URL была полной и находилась в кавычках:
+const supabase = createClient(
+  'https://hjmmphkxbnuxnpcbawpg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+);
 
   let currentQuestions = [];
   let currentIndex = 0;
