@@ -39,8 +39,10 @@
 
   // Подключение к Supabase (замените на ваши реальные ключи, если они отличаются)
 
-  const supabase = createClient('https://hjmmpnkxbnuxnpcbawpg.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU')
-
+const supabase = createClient(
+  'https://hjmmphkxbnuxnpcbawpg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
+);
   let currentQuestions = [];
   let currentIndex = 0;
   let userAnswers = {}; 
