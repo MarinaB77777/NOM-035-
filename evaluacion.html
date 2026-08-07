@@ -129,7 +129,9 @@
         id: q.question_number,
         question: q.question_text,
         category: q.category_name,
+        categoryId: q.category_id, 
         domain: q.domain_name,
+        domainId: q.domain_id,
         inverse: q.is_inverse,
         scores: q.is_inverse ? 
             { "Siempre": 4, "Casi siempre": 3, "Algunas veces": 2, "Casi nunca": 1, "Nunca": 0 } :
@@ -247,10 +249,19 @@
       const ans = userAnswers[q.id];
       const score = q.scores[ans] || 0;
       totalScore += score;
-      domainScores[q.domain] = (domainScores[q.domain] || 0) + score;
-      categoryScores[q.category] = (categoryScores[q.category] || 0) + score;
-    });
 
+      // Накапливаем баллы и сохраняем реальный ID из базы данных
+      if (!domainScores[q.domain]) {
+        domainScores[q.domain] = { score: 0, id: q.domainId };
+      }
+      domainScores[q.domain].score += score;
+
+      if (!categoryScores[q.category]) {
+        categoryScores[q.category] = { score: 0, id: q.categoryId };
+      }
+      categoryScores[q.category].score += score;
+    });
+    
     const qualityCheck = evaluateResponseQuality();
 
     try {
@@ -282,17 +293,16 @@
       }
 
       let evaluatedDomains = {};
-      for (const [domainName, score] of Object.entries(domainScores)) {
-        const domainId = domainIdMap[domainName] || 1;
-        const evaluated = getRisk(score, domainRules, 'domain_id', domainId);
-        evaluatedDomains[domainName] = { score, ...evaluated };
+      for (const [domainName, dataObj] of Object.entries(domainScores)) {
+        // dataObj.id — это официальный ID прямо из базы, переданный вместе с вопросом
+        const evaluated = getRisk(dataObj.score, domainRules, 'domain_id', dataObj.id);
+        evaluatedDomains[domainName] = { score: dataObj.score, ...evaluated };
       }
 
       let evaluatedCategories = {};
-      for (const [catName, score] of Object.entries(categoryScores)) {
-        const catId = categoryIdMap[catName] || 1;
-        const evaluated = getRisk(score, categoryRules, 'category_id', catId);
-        evaluatedCategories[catName] = { score, ...evaluated };
+      for (const [catName, dataObj] of Object.entries(categoryScores)) {
+        const evaluated = getRisk(dataObj.score, categoryRules, 'category_id', dataObj.id);
+        evaluatedCategories[catName] = { score: dataObj.score, ...evaluated };
       }
 
       const globalRule = globalRules.find(r => Number(totalScore) >= Number(r.min_score) && Number(totalScore) <= Number(r.max_score));
