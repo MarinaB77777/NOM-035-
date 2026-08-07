@@ -134,7 +134,10 @@
         .order('question_number', { ascending: true });
 
       if (error) throw error;
-
+      // --- ДОБАВЛЕННЫЙ ОТЛАДЧИК ---
+      console.log("Данные из Supabase:", data);
+      console.log("Количество полученных вопросов:", data ? data.length : 0);
+      // ----------------------------
       currentQuestions = data.map(q => ({
         id: q.question_number,
         question: q.question_text,
