@@ -47,10 +47,10 @@
     );
 
     function getSystemEmail(username) {
-        const clean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
-        return `${clean}@nom035.internal`;
+    const clean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+    return `${clean}@nom035.com`;
     }
-
+    
     window.handleSignUp = async function() {
         const username = document.getElementById('usernameInput').value.trim();
         const password = document.getElementById('passwordInput').value;
