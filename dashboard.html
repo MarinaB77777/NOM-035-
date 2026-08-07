@@ -26,8 +26,15 @@
     .section-title { font-size: 16px; font-weight: bold; color: #0f172a; margin-bottom: 15px; border-left: 4px solid var(--accent); padding-left: 10px; }
     
     .list-group { display: flex; flex-direction: column; gap: 10px; }
-    .list-item { display: flex; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
+    .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
     
+    .badge { font-size: 12px; font-weight: bold; padding: 3px 10px; border-radius: 6px; color: white; text-transform: capitalize; }
+    .badge-green { background: #16a34a; }
+    .badge-blue { background: #2563eb; }
+    .badge-yellow { background: #ca8a04; color: #fff; }
+    .badge-orange { background: #ea580c; }
+    .badge-red { background: #dc2626; }
+
     .loader { text-align: center; font-weight: bold; color: var(--muted); padding: 40px; }
   </style>
 </head>
@@ -55,14 +62,12 @@
 
     const user = session.user;
 
-    // Сначала пробуем взять из сессии (сохраненное сразу после теста), либо запрашиваем из базы
     let resultData = null;
     const localSaved = sessionStorage.getItem('nom035_last_result');
 
     if (localSaved) {
       resultData = JSON.parse(localSaved);
     } else {
-      // Если в сессии пусто, подтягиваем последнюю запись пользователя из Supabase
       const { data, error } = await supabase
         .from('nom035_survey_results')
         .select('*')
@@ -104,19 +109,42 @@
       return;
     }
 
+    // Обработка доменов с поддержкой новой структуры объектов
     let domainsHtml = '';
-    if (data.domainScores) {
-      for (const [domain, score] of Object.entries(data.domainScores)) {
-        domainsHtml += `<div class="list-item"><span>${domain}</span><strong>${score} pts</strong></div>`;
-      }
+    const domains = data.domainScores || {};
+    for (const [domainName, val] of Object.entries(domains)) {
+      const score = typeof val === 'object' && val !== null ? val.score : val;
+      const risk = typeof val === 'object' && val !== null ? val.risk : '';
+      const css = typeof val === 'object' && val !== null ? val.css : 'blue';
+
+      domainsHtml += `
+        <div class="list-item">
+          <span>${domainName}</span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${risk ? `<span class="badge badge-${css}">${risk}</span>` : ''}
+            <strong>${score} pts</strong>
+          </div>
+        </div>
+      `;
     }
 
+    // Обработка категорий с поддержкой новой структуры объектов
     let categoriesHtml = '';
-    const categories = data.categoryScores || data.category_scores;
-    if (categories) {
-      for (const [cat, score] of Object.entries(categories)) {
-        categoriesHtml += `<div class="list-item"><span>${cat}</span><strong>${score} pts</strong></div>`;
-      }
+    const categories = data.categoryScores || data.category_scores || {};
+    for (const [catName, val] of Object.entries(categories)) {
+      const score = typeof val === 'object' && val !== null ? val.score : val;
+      const risk = typeof val === 'object' && val !== null ? val.risk : '';
+      const css = typeof val === 'object' && val !== null ? val.css : 'blue';
+
+      categoriesHtml += `
+        <div class="list-item">
+          <span>${catName}</span>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${risk ? `<span class="badge badge-${css}">${risk}</span>` : ''}
+            <strong>${score} pts</strong>
+          </div>
+        </div>
+      `;
     }
 
     app.innerHTML = `
@@ -135,7 +163,7 @@
             <div class="metric-value">${data.totalScore || data.total_score}</div>
           </div>
           <div class="metric-card">
-            <h4>Nivel de Riesgo</h4>
+            <h4>Nivel de Riesgo Global</h4>
             <div class="metric-value" style="color: var(--accent);">${data.globalRisk || data.global_risk || 'Calculado'}</div>
           </div>
           <div class="metric-card">
