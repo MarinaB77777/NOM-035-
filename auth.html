@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Anónimo - NOM-035</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #3b82f6; --border: #334155; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .auth-card { background: var(--card); border: 1px solid var(--border); padding: 30px; border-radius: 16px; width: 100%; max-width: 360px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        h2 { margin-top: 0; color: #f1f5f9; font-size: 22px; text-align: center; }
+        p { color: var(--muted); font-size: 13px; text-align: center; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0 16px 0; background: #0f172a; border: 1px solid var(--border); border-radius: 8px; color: white; box-sizing: border-box; }
+        input:focus { border-color: var(--accent); outline: none; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: background 0.2s; }
+        .btn-reg { background: var(--accent); color: white; }
+        .btn-reg:hover { background: #2563eb; }
+        .btn-login { background: #475569; color: white; }
+        .btn-login:hover { background: #334155; }
+        #authError { color: #f87171; font-size: 12px; text-align: center; margin-top: 10px; min-height: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="auth-card">
+    <h2>Acceso Colaborador</h2>
+    <p>Ingresa un usuario único y contraseña para mantener tu anonimato.</p>
+    
+    <input type="text" id="usernameInput" placeholder="Usuario único (ej. worker_01)" />
+    <input type="password" id="passwordInput" placeholder="Contraseña" />
+    
+    <div class="btn-group">
+        <button class="btn-reg" onclick="handleSignUp()">Registrarse</button>
+        <button class="btn-login" onclick="handleSignIn()">Entrar</button>
+    </div>
+    
+    <div id="authError"></div>
+</div>
+
+<script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabase = createClient(
+        'https://hjmmphkxbnuxnpcbawpg.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
+    );
+
+    function getSystemEmail(username) {
+        const clean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+        return `${clean}@nom035.internal`;
+    }
+
+    window.handleSignUp = async function() {
+        const username = document.getElementById('usernameInput').value.trim();
+        const password = document.getElementById('passwordInput').value;
+        const errorEl = document.getElementById('authError');
+        errorEl.textContent = '';
+
+        if (!username || !password) {
+            errorEl.textContent = 'Rellena todos los campos';
+            return;
+        }
+
+        const email = getSystemEmail(username);
+
+        const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+        if (authError) {
+            errorEl.textContent = 'Error: ' + authError.message;
+            return;
+        }
+
+        if (authData.user) {
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .insert([{ id: authData.user.id, username: username }]);
+
+            if (profileError) {
+                errorEl.textContent = 'Este usuario ya está registrado';
+                return;
+            }
+
+            alert('¡Registro exitoso! Redirigiendo al cuestionario...');
+            window.location.href = 'evaluacion.html';
+        }
+    }
+
+    window.handleSignIn = async function() {
+        const username = document.getElementById('usernameInput').value.trim();
+        const password = document.getElementById('passwordInput').value;
+        const errorEl = document.getElementById('authError');
+        errorEl.textContent = '';
+
+        if (!username || !password) {
+            errorEl.textContent = 'Rellena todos los campos';
+            return;
+        }
+
+        const email = getSystemEmail(username);
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (error) {
+            errorEl.textContent = 'Usuario o contraseña incorrectos';
+        } else {
+            window.location.href = 'evaluacion.html';
+        }
+    }
+</script>
+
+</body>
+</html>
