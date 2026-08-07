@@ -59,8 +59,12 @@
   CRM Sharks + Gemini + ЗДЕСЬ МОЖЕТ БЫТЬ ВАШ УНИВЕРСИТЕТ
 </footer>
 
-<script>
-  // Официальный движок оценки рисков NOM-035 (Guía III)
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+  // Замените на ваши реальные ключи Supabase
+  const supabase = createClient('ВАШ_SUPABASE_URL', 'ВАШ_SUPABASE_ANON_KEY')
+
   const NOM035_OfficialEvaluator = {
     getGlobalRisk(score) {
       if (score < 50)  return { text: "Nulo o Despreciable", class: "risk-nulo" };
@@ -113,24 +117,40 @@
     }
   };
 
-  // Стандартные тестовые данные Guía III на случай автономного запуска
-  let questionDatabase = [
-    { id: 1, question: "El espacio donde trabajo es seguro y limpio", category: "Condiciones en el ambiente de trabajo", domain: "Condiciones en el ambiente de trabajo", scores: { "Siempre": 0, "Casi siempre": 1, "Algunas veces": 2, "Casi nunca": 3, "Nunca": 4 } },
-    { id: 2, question: "Las condiciones de mi trabajo afectan mi salud", category: "Factores propios de la actividad", domain: "Carga de trabajo", scores: { "Siempre": 4, "Casi siempre": 3, "Algunas veces": 2, "Casi nunca": 1, "Nunca": 0 } }
-    // (Здесь подключается полный массив из 72 вопросов официальной базы)
-  ];
-
   let currentQuestions = [];
   let currentIndex = 0;
   let userAnswers = {};
   let questionStartTime = 0;
   let timerInterval = null;
 
-  function startQuiz() {
-    currentQuestions = [...questionDatabase];
-    currentIndex = 0;
-    userAnswers = {};
-    renderQuestion();
+  window.startQuiz = async function() {
+    const app = document.getElementById('app');
+    app.innerHTML = `<div class="loader" style="text-align:center; padding:20px; color:#64748b; font-weight:bold;">Conectando con Supabase y cargando los 72 reactivos...</div>`;
+
+    try {
+      const { data, error } = await supabase
+        .from('v_nom035_questionnaire_map')
+        .select('*')
+        .order('question_number', { ascending: true });
+
+      if (error) throw error;
+
+      currentQuestions = data.map(q => ({
+        id: q.question_number,
+        question: q.question_text,
+        category: q.category_name,
+        domain: q.domain_name,
+        scores: q.is_inverse ? 
+            { "Siempre": 4, "Casi siempre": 3, "Algunas veces": 2, "Casi nunca": 1, "Nunca": 0 } :
+            { "Siempre": 0, "Casi siempre": 1, "Algunas veces": 2, "Casi nunca": 3, "Nunca": 4 }
+      }));
+
+      currentIndex = 0;
+      userAnswers = {};
+      renderQuestion();
+    } catch (err) {
+      app.innerHTML = `<h3 style="color: #991b1b;">Error al cargar el cuestionario</h3><p style="color: #64748b;">${err.message}</p>`;
+    }
   }
 
   function renderQuestion() {
@@ -153,14 +173,14 @@
       <div class="question-text">${q.question}</div>
       <div class="options-list">
         ${Object.entries(q.scores).map(([text, val]) => `
-          <label class="option-label" onclick='selectOption(this, ${val}, ${q.id}, ${JSON.stringify(q.category)}, ${JSON.stringify(q.domain)})'>
+          <label class="option-label" onclick='window.selectOption(this, ${val}, ${q.id}, ${JSON.stringify(q.category)}, ${JSON.stringify(q.domain)})'>
             <input type="radio" name="q_${q.id}" value="${val}"> ${text}
           </label>
         `).join('')}
       </div>
       <div class="buttons-group">
-        ${currentIndex > 0 ? `<button class="btn btn-secondary" onclick="prevQuestion()">Anterior</button>` : '<div></div>'}
-        <button class="btn btn-primary" onclick="nextQuestion()">${currentIndex === currentQuestions.length - 1 ? 'Finalizar' : 'Siguiente'}</button>
+        ${currentIndex > 0 ? `<button class="btn btn-secondary" onclick="window.prevQuestion()">Anterior</button>` : '<div></div>'}
+        <button class="btn btn-primary" onclick="window.nextQuestion()">${currentIndex === currentQuestions.length - 1 ? 'Finalizar' : 'Siguiente'}</button>
       </div>
     `;
 
@@ -168,18 +188,19 @@
     let sec = 0;
     timerInterval = setInterval(() => {
       sec++;
-      document.getElementById('timerDisplay').textContent = `⏱️ ${sec}s`;
+      const timerEl = document.getElementById('timerDisplay');
+      if (timerEl) timerEl.textContent = `⏱️ ${sec}s`;
     }, 1000);
   }
 
-  function selectOption(el, val, id, cat, dom) {
+  window.selectOption = function(el, val, id, cat, dom) {
     document.querySelectorAll('.option-label').forEach(l => l.classList.remove('selected'));
     el.classList.add('selected');
     el.querySelector('input').checked = true;
     userAnswers[id] = { score: val, category: cat, domain: dom };
   }
 
-  function nextQuestion() {
+  window.nextQuestion = function() {
     const q = currentQuestions[currentIndex];
     if (!userAnswers[q.id]) {
       alert("Por favor, selecciona una opción para continuar.");
@@ -190,7 +211,7 @@
     renderQuestion();
   }
 
-  function prevQuestion() {
+  window.prevQuestion = function() {
     clearInterval(timerInterval);
     if (currentIndex > 0) { currentIndex--; renderQuestion(); }
   }
