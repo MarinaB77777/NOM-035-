@@ -89,7 +89,6 @@
     select { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; background: white; outline: none; transition: border-color 0.2s; }
     select:focus { border-color: var(--accent); }
 
-    /* Стили для ИИ-чата бонуса */
     .chat-container { background: #1e293b; color: #f8fafc; border-radius: var(--radius); padding: 24px; margin-top: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
     .chat-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-weight: 700; font-size: 16px; color: #38bdf8; }
     .chat-messages { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; padding-right: 5px; }
@@ -108,7 +107,7 @@
 <body>
 
 <div class="container" id="dashboardApp">
-  <div class="loader">✨ Загружаем ваш персональный премиум-кабинет...</div>
+  <div class="loader">✨ Cargando panel de control...</div>
 </div>
 
 <script type="module">
@@ -179,27 +178,27 @@
         <div class="card" style="background: var(--success-bg); border-color: #bbf7d0;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-              <h3 style="margin: 0 0 5px 0; color: var(--success-text); font-size: 15px;">📍 Центр работы / Цех закреплен</h3>
-              <p style="margin: 0; font-size: 14px; color: #15803d;"><strong>Отдел:</strong> ${dept.name} &bull; <strong>Руководитель:</strong> ${dept.leader || 'Не назначен'}</p>
+              <h3 style="margin: 0 0 5px 0; color: var(--success-text); font-size: 15px;">📍 Centro de trabajo / Taller asignado</h3>
+              <p style="margin: 0; font-size: 14px; color: #15803d;"><strong>Departamento:</strong> ${dept.name} &bull; <strong>Responsable:</strong> ${dept.leader || 'Sin asignar'}</p>
             </div>
-            <button onclick="showDepartmentSelector()" class="btn btn-secondary" style="font-size: 12px; padding: 8px 14px;">Изменить</button>
+            <button onclick="showDepartmentSelector()" class="btn btn-secondary" style="font-size: 12px; padding: 8px 14px;">Cambiar</button>
           </div>
         </div>
       `;
     } else {
-      let options = `<option value="">-- Выберите ваш цех или отдел --</option>`;
+      let options = `<option value="">-- Selecciona tu taller o departamento --</option>`;
       departments.forEach(d => {
-        options += `<option value="${d.id}">${d.name} (Ответственный: ${d.leader || 'Нет'})</option>`;
+        options += `<option value="${d.id}">${d.name} (Responsable: ${d.leader || 'Ninguno'})</option>`;
       });
 
       departmentSection = `
         <div class="card" style="border-left: 5px solid #ca8a04; background: var(--warning-bg);">
-          <h3 style="margin-top: 0; color: var(--warning-text); font-size: 16px;">⚠️ Требуется выбор рабочего подразделения</h3>
-          <p style="font-size: 14px; color: #713f12; margin-bottom: 15px;">Укажите ваш цех, чтобы анонимные результаты опроса корректно учитывались в корпоративной статистике:</p>
+          <h3 style="margin-top: 0; color: var(--warning-text); font-size: 16px;">⚠️ Selección de departamento obligatoria</h3>
+          <p style="font-size: 14px; color: #713f12; margin-bottom: 15px;">Por favor selecciona tu área de trabajo para agrupar correctamente los resultados anónimos:</p>
           <div class="form-group">
             <select id="userDeptSelect">${options}</select>
           </div>
-          <button onclick="saveUserDepartment()" class="btn">Сохранить подразделение</button>
+          <button onclick="saveUserDepartment()" class="btn">Guardar departamento</button>
         </div>
       `;
     }
@@ -208,13 +207,13 @@
       app.innerHTML = `
         <div class="card">
           <div class="header">
-            <h2>Личный кабинет NOM-035</h2>
-            <button id="logoutBtn" class="btn btn-secondary" style="padding: 8px 16px;">Выйти</button>
+            <h2>Mi Panel NOM-035</h2>
+            <button id="logoutBtn" class="btn btn-secondary" style="padding: 8px 16px;">Cerrar Sesión</button>
           </div>
           ${departmentSection}
           <div style="text-align: center; padding: 30px 0;">
-            <p style="color: var(--text-light); margin-bottom: 20px; font-size: 15px;">Вы еще не проходили обязательную психосоциальную оценку (Guía III).</p>
-            <a href="quiz.html" class="btn" style="font-size: 16px; padding: 14px 28px;">🚀 Начать прохождение опросника</a>
+            <p style="color: var(--text-light); margin-bottom: 20px; font-size: 15px;">Aún no has realizado la evaluación psicosocial obligatoria (Guía III).</p>
+            <a href="quiz.html" class="btn" style="font-size: 16px; padding: 14px 28px;">🚀 Realizar Cuestionario (Guía III)</a>
           </div>
         </div>
       `;
@@ -234,7 +233,7 @@
           <span>${domainName}</span>
           <div style="display: flex; align-items: center; gap: 12px;">
             ${risk ? `<span class="badge badge-${css}">${risk}</span>` : ''}
-            <strong>${score} балл.</strong>
+            <strong>${score} pts</strong>
           </div>
         </div>
       `;
@@ -252,7 +251,7 @@
           <span>${catName}</span>
           <div style="display: flex; align-items: center; gap: 12px;">
             ${risk ? `<span class="badge badge-${css}">${risk}</span>` : ''}
-            <strong>${score} балл.</strong>
+            <strong>${score} pts</strong>
           </div>
         </div>
       `;
@@ -262,51 +261,51 @@
       <div class="card">
         <div class="header">
           <div>
-            <h2>Результаты оценки NOM-035</h2>
-            <p style="margin: 4px 0 0 0; color: var(--text-light); font-size: 13px;">Пользователь: ${user.email}</p>
+            <h2>Panel de Resultados - NOM-035</h2>
+            <p style="margin: 4px 0 0 0; color: var(--text-light); font-size: 13px;">Usuario: ${user.email}</p>
           </div>
-          <button id="logoutBtn" class="btn btn-secondary" style="padding: 8px 16px;">Выйти</button>
+          <button id="logoutBtn" class="btn btn-secondary" style="padding: 8px 16px;">Cerrar Sesión</button>
         </div>
 
         ${departmentSection}
 
         <div class="summary-grid">
           <div class="metric-card">
-            <h4>Общий балл</h4>
+            <h4>Puntuación Global</h4>
             <div class="metric-value">${data.totalScore || data.total_score}</div>
           </div>
           <div class="metric-card" style="--accent: #8b5cf6;">
-            <h4>Уровень риска</h4>
-            <div class="metric-value" style="font-size: 20px; margin-top: 4px; color: #7c3aed;">${data.globalRisk || data.global_risk || 'Определен'}</div>
+            <h4>Nivel de Riesgo</h4>
+            <div class="metric-value" style="font-size: 20px; margin-top: 4px; color: #7c3aed;">${data.globalRisk || data.global_risk || 'Calculado'}</div>
           </div>
           <div class="metric-card" style="--accent: #10b981;">
-            <h4>Статус прохождения</h4>
-            <div class="metric-value" style="font-size: 16px; margin-top: 8px; color: #059669;">${data.validityStatus || 'Зачтено'}</div>
+            <h4>Estado de Validez</h4>
+            <div class="metric-value" style="font-size: 16px; margin-top: 8px; color: #059669;">${data.validityStatus || 'Válido'}</div>
           </div>
         </div>
 
-        <div class="section-title">📊 Официальные категории</div>
+        <div class="section-title">📊 Categorías Oficiales</div>
         <div class="list-group" style="margin-bottom: 30px;">
-          ${categoriesHtml || '<p style="color:var(--text-light)">Данные категорий отсутствуют</p>'}
+          ${categoriesHtml || '<p style="color:var(--text-light)">Sin datos de categorías</p>'}
         </div>
 
-        <div class="section-title">🔍 Детализация по доменам</div>
+        <div class="section-title">🔍 Dominios Detallados</div>
         <div class="list-group">
-          ${domainsHtml || '<p style="color:var(--text-light)">Данные доменов отсутствуют</p>'}
+          ${domainsHtml || '<p style="color:var(--text-light)">Sin datos de dominios</p>'}
         </div>
       </div>
 
-      <!-- БОНУС: Встроенный ИИ-ассистент в кабинете -->
+      <!-- Asistente IA integrado -->
       <div class="chat-container">
         <div class="chat-header">
-          💬 ИИ-помощник по стандарту NOM-035
+          💬 Asistente IA - Norma NOM-035
         </div>
         <div class="chat-messages" id="chatMessages">
-          <div class="chat-msg ai">Привет! Я твой встроенный ИИ-помощник. Могу подсказать, как снизить уровень стресса, объяснить трактовку баллов или ответить на вопросы по регламенту компании. Спроси меня о чём угодно!</div>
+          <div class="chat-msg ai">¡Hola! Soy tu asistente virtual integrado. Puedo ayudarte a interpretar tus puntajes, darte consejos para reducir el estrés laboral o responder dudas sobre la norma NOM-035. ¿En qué te puedo ayudar hoy?</div>
         </div>
         <div class="chat-input-row">
-          <input type="text" id="chatInput" class="chat-input" placeholder="Напиши вопрос (например: Как улучшить показатели баланса?)">
-          <button class="chat-send" id="chatSendBtn">Спросить</button>
+          <input type="text" id="chatInput" class="chat-input" placeholder="Escribe tu pregunta (ej: ¿Cómo mejorar el clima laboral?)">
+          <button class="chat-send" id="chatSendBtn">Enviar</button>
         </div>
       </div>
     `;
@@ -324,7 +323,6 @@
       const text = inputField.value.trim();
       if (!text) return;
 
-      // Добавляем сообщение пользователя
       const userDiv = document.createElement('div');
       userDiv.className = 'chat-msg user';
       userDiv.textContent = text;
@@ -332,18 +330,17 @@
       inputField.value = '';
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-      // Ответ ИИ (умная генерация на основе контекста опроса)
       setTimeout(() => {
         const aiDiv = document.createElement('div');
         aiDiv.className = 'chat-msg ai';
         
         const lower = text.toLowerCase();
-        if (lower.includes('стресс') || lower.includes('усталость') || lower.includes('тревог')) {
-          aiDiv.textContent = 'Для снижения стресса по стандартам NOM-035 рекомендуется делать регулярные перерывы, соблюдать баланс рабочего времени и обращаться к своему тим-лиду при высокой рабочей нагрузке.';
-        } else if (lower.includes('балл') || lower.includes('оценка')результат) {
-          aiDiv.textContent = `Твой общий балл составляет ${surveyData.totalScore || surveyData.total_score}. Уровень риска оценивается как "${surveyData.globalRisk || surveyData.global_risk}". Это помогает руководству улучшать рабочую среду.`;
+        if (lower.includes('estrés') || lower.includes('fatiga') || lower.includes('ansiedad') || lower.includes('cansancio')) {
+          aiDiv.textContent = 'Para reducir el estrés conforme a las directrices de la NOM-035, se recomienda tomar descansos regulares, mantener comunicación abierta con tu supervisor y reportar sobrecargas de trabajo a tiempo.';
+        } else if (lower.includes('punto') || lower.includes('puntuacion') || lower.includes('resultado') || lower.includes('score')) {
+          aiDiv.textContent = `Tu puntuación global actual es de ${surveyData.totalScore || surveyData.total_score} puntos, con un nivel de riesgo "${surveyData.globalRisk || surveyData.global_risk}". Estos datos ayudan a mejorar las condiciones en tu área de trabajo.`;
         } else {
-          aiDiv.textContent = `Отличный вопрос! По стандарту NOM-035 ключевым фокусом является создание безопасной и эргономичной атмосферы. Если тебе нужна конкретная консультация по твоему цеху, лучше обсудить это с ответственным мастером.`;
+          aiDiv.textContent = `Es una excelente pregunta. El objetivo principal de la NOM-035 es fomentar un entorno organizacional favorable. Si requieres apoyo específico en tu taller, te sugiero consultarlo directamente con el responsable asignado.`;
         }
 
         messagesContainer.appendChild(aiDiv);
@@ -360,7 +357,7 @@
   window.saveUserDepartment = async function() {
     const deptId = document.getElementById('userDeptSelect').value;
     if (!deptId) {
-      alert('Пожалуйста, выберите цех или отдел.');
+      alert('Por favor selecciona un departamento.');
       return;
     }
 
@@ -373,7 +370,7 @@
       .eq('id', session.user.id);
 
     if (error) {
-      alert('Ошибка сохранения: ' + error.message);
+      alert('Error al guardar: ' + error.message);
       return;
     }
 
@@ -390,7 +387,7 @@
       .eq('id', session.user.id);
 
     if (error) {
-      alert('Ошибка: ' + error.message);
+      alert('Error: ' + error.message);
       return;
     }
 
