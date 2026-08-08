@@ -145,6 +145,7 @@
     }
   }
 
+  // Проверка двойного совпадения напрямую в таблице nom035_admins
   window.verifyAdminLogin = async function() {
     const userField = document.getElementById('adminUser').value.trim();
     const passField = document.getElementById('adminPass').value.trim();
@@ -159,7 +160,7 @@
       .select('*')
       .eq('username', userField)
       .eq('password', passField)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       alert('Credenciales incorrectas.');
