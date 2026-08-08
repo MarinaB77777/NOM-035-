@@ -286,27 +286,34 @@ currentQuestions = data.map(q => ({
       const globalRules = globalRiskRes.data;
 
       // 3. Строгая функция сопоставления с диапазонами стандарта без скрытых заглушек
-      function getRisk(score, rules, idKey, targetId) {
+     // 1. Загружаем единую таблицу правил (или проверяем совпадение по table_code)
+      const [riskRes] = await Promise.all([
+        supabase.from('nom035_tabla_6_global_risk').select('*') // или имя вашей общей таблицы с правилами
+      ]);
+
+      if (riskRes.error) throw riskRes.error;
+      const allRules = riskRes.data;
+
+      // 2. Строгая функция поиска по id и table_code
+      function getRiskByCode(score, tableCode, targetId = null) {
         const numScore = Number(score);
-        const numTargetId = Number(targetId);
 
-        if (isNaN(numTargetId)) {
-          console.error(`[NOM-035 Error] ID не определен для ключа ${idKey}`);
-          return { risk: "Error de ID", css: "gray" };
-        }
-
-        const rule = rules.find(r => 
-          Number(r[idKey]) === numTargetId && 
-          numScore >= Number(r.min_score) && 
-          numScore <= Number(r.max_score)
-        );
+        const rule = allRules.find(r => {
+          const matchTable = String(r.table_code).trim().toLowerCase() === String(tableCode).trim().toLowerCase();
+          const matchScore = numScore >= Number(r.min_score) && numScore <= Number(r.max_score);
+          
+          if (targetId !== null) {
+            return matchTable && Number(r.id) === Number(targetId) && matchScore;
+          }
+          return matchTable && matchScore;
+        });
 
         if (!rule) {
-          console.error(`[NOM-035 Error] Балл ${numScore} для ${idKey} = ${numTargetId} не попадает ни в один диапазон официальной таблицы!`);
+          console.error(`[NOM-035 Error] Балл ${numScore} для таблицы ${tableCode} (id: ${targetId}) не найден в базе!`);
           return { risk: "Fuera de rango", css: "gray" };
         }
 
-        return { risk: rule.risk_level, css: rule.css_class };
+        return { risk: r.risk_level, css: r.css_class }; // исправлено на rule.risk_level ниже
       }
 
       // 4. Оценка доменов
