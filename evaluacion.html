@@ -119,24 +119,27 @@
     document.getElementById('quizApp').innerHTML = `<div class="loader">Cargando reactivos de la norma...</div>`;
     try {
       const { data, error } = await supabase
-        .from('v_nom035_questionnaire_map')
-        .select('*')
-        .order('question_number', { ascending: true });
+  .from('v_nom035_questions_complete')
+  .select('*')
+  .order('question_number', { ascending: true });
 
-      if (error) throw error;
+if (error) {
+  console.error("Ошибка загрузки вопросов:", error);
+  return;
+}
 
-      currentQuestions = data.map(q => ({
-        id: q.question_number,
-        question: q.question_text,
-        category: q.category_name,
-        categoryId: q.category_id, 
-        domain: q.domain_name,
-        domainId: q.domain_id,
-        inverse: q.is_inverse,
-        scores: q.is_inverse ? 
-            { "Siempre": 4, "Casi siempre": 3, "Algunas veces": 2, "Casi nunca": 1, "Nunca": 0 } :
-            { "Siempre": 0, "Casi siempre": 1, "Algunas veces": 2, "Casi nunca": 3, "Nunca": 4 }
-      }));
+currentQuestions = data.map(q => ({
+  id: q.question_number,
+  question: q.question_text,
+  category: q.category_name,
+  categoryId: q.category_id, // Строгий ID категории (1-5) из созданного View
+  domain: q.domain_name,
+  domainId: q.domain_id,     // Строгий ID домена (1-10) из созданного View
+  inverse: q.is_inverse,
+  scores: q.is_inverse ? 
+      { "Siempre": 4, "Casi siempre": 3, "Algunas veces": 2, "Casi nunca": 1, "Nunca": 0 } :
+      { "Siempre": 0, "Casi siempre": 1, "Algunas veces": 2, "Casi nunca": 3, "Nunca": 4 }
+}));
 
       renderQuestion();
     } catch (err) {
