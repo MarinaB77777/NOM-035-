@@ -248,19 +248,21 @@ currentQuestions = data.map(q => ({
     let domainScores = {};
     let categoryScores = {};
 
-    // 1. Суммируем баллы строго по доменам и категориям, полученным из базы
+    // 1. Суммируем баллы, используя официальные ID из словарей стандарта по имени
     currentQuestions.forEach(q => {
       const ans = userAnswers[q.id];
       const score = q.scores[ans] || 0;
       totalScore += score;
 
+      const domainRealId = domainIdMap[q.domain];
       if (!domainScores[q.domain]) {
-        domainScores[q.domain] = { score: 0, id: q.domainId };
+        domainScores[q.domain] = { score: 0, id: domainRealId };
       }
       domainScores[q.domain].score += score;
 
+      const categoryRealId = categoryIdMap[q.category];
       if (!categoryScores[q.category]) {
-        categoryScores[q.category] = { score: 0, id: q.categoryId };
+        categoryScores[q.category] = { score: 0, id: categoryRealId };
       }
       categoryScores[q.category].score += score;
     });
