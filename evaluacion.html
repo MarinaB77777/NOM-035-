@@ -241,19 +241,19 @@ currentQuestions = data.map(q => ({
 
   async function handleQuizCompletion() {
     document.getElementById('quizApp').innerHTML = `
-      <div class="loader">Procesando dictamen con tablas oficiales y guardando...</div>
+      <div class="loader">Procesando dictamen estricto según la norma y guardando...</div>
     `;
 
     let totalScore = 0;
     let domainScores = {};
     let categoryScores = {};
 
+    // 1. Суммируем баллы строго по доменам и категориям, полученным из базы
     currentQuestions.forEach(q => {
       const ans = userAnswers[q.id];
       const score = q.scores[ans] || 0;
       totalScore += score;
 
-      // Накапливаем баллы и сохраняем реальный ID из базы данных
       if (!domainScores[q.domain]) {
         domainScores[q.domain] = { score: 0, id: q.domainId };
       }
@@ -268,6 +268,7 @@ currentQuestions = data.map(q => ({
     const qualityCheck = evaluateResponseQuality();
 
     try {
+      // 2. Загружаем официальные таблицы рисков из базы данных
       const [domainRiskRes, categoryRiskRes, globalRiskRes] = await Promise.all([
         supabase.from('nom035_tabla_4_domain_risk').select('*'),
         supabase.from('nom035_tabla_5_category_risk').select('*'),
@@ -281,36 +282,57 @@ currentQuestions = data.map(q => ({
       const domainRules = domainRiskRes.data;
       const categoryRules = categoryRiskRes.data;
       const globalRules = globalRiskRes.data;
-      console.log("Правила доменов из базы:", domainRules);
-      console.log("Баллы пользователя по доменам:", domainScores);
+
+      // 3. Строгая функция сопоставления с диапазонами стандарта без скрытых заглушек
       function getRisk(score, rules, idKey, targetId) {
         const numScore = Number(score);
         const numTargetId = Number(targetId);
+
+        if (isNaN(numTargetId)) {
+          console.error(`[NOM-035 Error] ID не определен для ключа ${idKey}`);
+          return { risk: "Error de ID", css: "gray" };
+        }
 
         const rule = rules.find(r => 
           Number(r[idKey]) === numTargetId && 
           numScore >= Number(r.min_score) && 
           numScore <= Number(r.max_score)
         );
-        return rule ? { risk: rule.risk_level, css: rule.css_class } : { risk: "Despreciable", css: "green" };
+
+        if (!rule) {
+          console.error(`[NOM-035 Error] Балл ${numScore} для ${idKey} = ${numTargetId} не попадает ни в один диапазон официальной таблицы!`);
+          return { risk: "Fuera de rango", css: "gray" };
+        }
+
+        return { risk: rule.risk_level, css: rule.css_class };
       }
 
+      // 4. Оценка доменов
       let evaluatedDomains = {};
       for (const [domainName, dataObj] of Object.entries(domainScores)) {
-        // dataObj.id — это официальный ID прямо из базы, переданный вместе с вопросом
         const evaluated = getRisk(dataObj.score, domainRules, 'domain_id', dataObj.id);
         evaluatedDomains[domainName] = { score: dataObj.score, ...evaluated };
       }
 
+      // 5. Оценка категорий
       let evaluatedCategories = {};
       for (const [catName, dataObj] of Object.entries(categoryScores)) {
         const evaluated = getRisk(dataObj.score, categoryRules, 'category_id', dataObj.id);
         evaluatedCategories[catName] = { score: dataObj.score, ...evaluated };
       }
 
-      const globalRule = globalRules.find(r => Number(totalScore) >= Number(r.min_score) && Number(totalScore) <= Number(r.max_score));
-      const globalRiskText = globalRule ? globalRule.risk_level : "Bajo";
+      // 6. Оценка итогового глобального риска
+      const globalRule = globalRules.find(r => 
+        Number(totalScore) >= Number(r.min_score) && 
+        Number(totalScore) <= Number(r.max_score)
+      );
+      
+      if (!globalRule) {
+        console.error(`[NOM-035 Error] Глобальный балл ${totalScore} вне диапазона Таблицы 6.`);
+      }
+      const globalRiskText = globalRule ? globalRule.risk_level : "Fuera de rango";
 
+      // 7. Формирование пакета данных для сохранения
       const payloadToSupabase = {
         user_id: currentUser ? currentUser.id : null,
         total_score: totalScore,
@@ -324,8 +346,13 @@ currentQuestions = data.map(q => ({
         created_at: new Date().toISOString()
       };
 
-      await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
+      // Попытка сохранения в БД (если таблица создана)
+      const { error: insertError } = await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
+      if (insertError) {
+        console.warn("Предупреждение: не удалось сохранить в таблицу nom035_survey_results. Проверьте её наличие в БД:", insertError.message);
+      }
 
+      // Дублирование в сессию для мгновенного отображения в панели
       sessionStorage.setItem('nom035_last_result', JSON.stringify({
         totalScore,
         globalRisk: globalRiskText,
@@ -336,14 +363,13 @@ currentQuestions = data.map(q => ({
       }));
 
     } catch (err) {
-      console.error("Error al calcular riesgos con las tablas oficiales:", err.message);
-      alert("Hubo un error al procesar las tablas oficiales de riesgo.");
+      console.error("Error crítico al procesar el dictamen oficial:", err.message);
+      alert("Hubo un error crítico al procesar las tablas oficiales de riesgo.");
     }
 
     history.replaceState(null, '', 'dashboard.html');
     window.location.href = 'dashboard.html';
   }
-
   checkAuthAndInit();
 </script>
 
