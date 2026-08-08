@@ -240,146 +240,129 @@ currentQuestions = data.map(q => ({
   }
 
   async function handleQuizCompletion() {
-    document.getElementById('quizApp').innerHTML = `
-      <div class="loader">Procesando dictamen estricto según la norma y guardando...</div>
-    `;
+  document.getElementById('quizApp').innerHTML = `
+    <div class="loader">Procesando dictamen estricto según la norma y guardando...</div>
+  `;
 
-    let totalScore = 0;
-    let domainScores = {};
-    let categoryScores = {};
+  let totalScore = 0;
+  let domainScores = {};
+  let categoryScores = {};
 
-    // 1. Суммируем баллы, используя официальные ID из словарей стандарта по имени
-    currentQuestions.forEach(q => {
-      const ans = userAnswers[q.id];
-      const score = q.scores[ans] || 0;
-      totalScore += score;
+  // 1. Суммируем баллы, используя официальные ID из словарей стандарта по имени
+  currentQuestions.forEach(q => {
+    const ans = userAnswers[q.id];
+    const score = q.scores[ans] || 0;
+    totalScore += score;
 
-      const domainRealId = domainIdMap[q.domain];
-      if (!domainScores[q.domain]) {
-        domainScores[q.domain] = { score: 0, id: domainRealId };
-      }
-      domainScores[q.domain].score += score;
+    const domainRealId = domainIdMap[q.domain];
+    if (!domainScores[q.domain]) {
+      domainScores[q.domain] = { score: 0, id: domainRealId };
+    }
+    domainScores[q.domain].score += score;
 
-      const categoryRealId = categoryIdMap[q.category];
-      if (!categoryScores[q.category]) {
-        categoryScores[q.category] = { score: 0, id: categoryRealId };
-      }
-      categoryScores[q.category].score += score;
-    });
-    
-    const qualityCheck = evaluateResponseQuality();
+    const categoryRealId = categoryIdMap[q.category];
+    if (!categoryScores[q.category]) {
+      categoryScores[q.category] = { score: 0, id: categoryRealId };
+    }
+    categoryScores[q.category].score += score;
+  });
+  
+  const qualityCheck = evaluateResponseQuality();
 
-    try {
-      // 2. Загружаем официальные таблицы рисков из базы данных
-      const [domainRiskRes, categoryRiskRes, globalRiskRes] = await Promise.all([
-        supabase.from('nom035_tabla_4_domain_risk').select('*'),
-        supabase.from('nom035_tabla_5_category_risk').select('*'),
-        supabase.from('nom035_tabla_6_global_risk').select('*')
-      ]);
+  try {
+    // 2. Загружаем официальные таблицы рисков из базы данных параллельно
+    const [domainRiskRes, categoryRiskRes, globalRiskRes] = await Promise.all([
+      supabase.from('nom035_tabla_4_domain_risk').select('*'),
+      supabase.from('nom035_tabla_5_category_risk').select('*'),
+      supabase.from('nom035_tabla_6_global_risk').select('*')
+    ]);
 
-      if (domainRiskRes.error) throw domainRiskRes.error;
-      if (categoryRiskRes.error) throw categoryRiskRes.error;
-      if (globalRiskRes.error) throw globalRiskRes.error;
+    if (domainRiskRes.error) throw domainRiskRes.error;
+    if (categoryRiskRes.error) throw categoryRiskRes.error;
+    if (globalRiskRes.error) throw globalRiskRes.error;
 
-      const domainRules = domainRiskRes.data;
-      const categoryRules = categoryRiskRes.data;
-      const globalRules = globalRiskRes.data;
+    const domainRules = domainRiskRes.data;
+    const categoryRules = categoryRiskRes.data;
+    const globalRules = globalRiskRes.data;
 
-      // 3. Строгая функция сопоставления с диапазонами стандарта без скрытых заглушек
-     // 1. Загружаем единую таблицу правил (или проверяем совпадение по table_code)
-      const [riskRes] = await Promise.all([
-        supabase.from('nom035_tabla_6_global_risk').select('*') // или имя вашей общей таблицы с правилами
-      ]);
+    // 3. Строгая функция сопоставления с диапазонами стандарта по колонке 'id'
+    function getRisk(score, rules, targetId = null) {
+      const numScore = Number(score);
+      const numTargetId = targetId !== null ? Number(targetId) : null;
 
-      if (riskRes.error) throw riskRes.error;
-      const allRules = riskRes.data;
-
-      // 2. Строгая функция поиска по id и table_code
-      function getRiskByCode(score, tableCode, targetId = null) {
-        const numScore = Number(score);
-
-        const rule = allRules.find(r => {
-          const matchTable = String(r.table_code).trim().toLowerCase() === String(tableCode).trim().toLowerCase();
-          const matchScore = numScore >= Number(r.min_score) && numScore <= Number(r.max_score);
-          
-          if (targetId !== null) {
-            return matchTable && Number(r.id) === Number(targetId) && matchScore;
-          }
-          return matchTable && matchScore;
-        });
-
-        if (!rule) {
-          console.error(`[NOM-035 Error] Балл ${numScore} для таблицы ${tableCode} (id: ${targetId}) не найден в базе!`);
-          return { risk: "Fuera de rango", css: "gray" };
+      const rule = rules.find(r => {
+        const matchScore = numScore >= Number(r.min_score) && numScore <= Number(r.max_score);
+        if (numTargetId !== null) {
+          return Number(r.id) === numTargetId && matchScore;
         }
+        return matchScore;
+      });
 
-        return { risk: r.risk_level, css: r.css_class }; // исправлено на rule.risk_level ниже
+      if (!rule) {
+        console.error(`[NOM-035 Error] Балл ${numScore} (id: ${numTargetId}) не найден в таблице диапазонов!`);
+        return { risk: "Fuera de rango", css: "gray" };
       }
 
-      // 4. Оценка доменов
-      let evaluatedDomains = {};
-      for (const [domainName, dataObj] of Object.entries(domainScores)) {
-        const evaluated = getRisk(dataObj.score, domainRules, 'domain_id', dataObj.id);
-        evaluatedDomains[domainName] = { score: dataObj.score, ...evaluated };
-      }
-
-      // 5. Оценка категорий
-      let evaluatedCategories = {};
-      for (const [catName, dataObj] of Object.entries(categoryScores)) {
-        const evaluated = getRisk(dataObj.score, categoryRules, 'category_id', dataObj.id);
-        evaluatedCategories[catName] = { score: dataObj.score, ...evaluated };
-      }
-
-      // 6. Оценка итогового глобального риска
-      const globalRule = globalRules.find(r => 
-        Number(totalScore) >= Number(r.min_score) && 
-        Number(totalScore) <= Number(r.max_score)
-      );
-      
-      if (!globalRule) {
-        console.error(`[NOM-035 Error] Глобальный балл ${totalScore} вне диапазона Таблицы 6.`);
-      }
-      const globalRiskText = globalRule ? globalRule.risk_level : "Fuera de rango";
-
-      // 7. Формирование пакета данных для сохранения
-      const payloadToSupabase = {
-        user_id: currentUser ? currentUser.id : null,
-        total_score: totalScore,
-        global_risk: globalRiskText,
-        domain_scores: evaluatedDomains,
-        category_scores: evaluatedCategories,
-        total_time_seconds: qualityCheck.totalTimeSeconds,
-        validity_status: qualityCheck.validityStatus,
-        quality_flags: qualityCheck.flags,
-        audit_metrics: qualityCheck.metrics,
-        created_at: new Date().toISOString()
-      };
-
-      // Попытка сохранения в БД (если таблица создана)
-      const { error: insertError } = await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
-      if (insertError) {
-        console.warn("Предупреждение: не удалось сохранить в таблицу nom035_survey_results. Проверьте её наличие в БД:", insertError.message);
-      }
-
-      // Дублирование в сессию для мгновенного отображения в панели
-      sessionStorage.setItem('nom035_last_result', JSON.stringify({
-        totalScore,
-        globalRisk: globalRiskText,
-        domainScores: evaluatedDomains,
-        categoryScores: evaluatedCategories,
-        totalTime: qualityCheck.totalTimeSeconds,
-        validityStatus: qualityCheck.validityStatus
-      }));
-
-    } catch (err) {
-      console.error("Error crítico al procesar el dictamen oficial:", err.message);
-      alert("Hubo un error crítico al procesar las tablas oficiales de riesgo.");
+      return { risk: rule.risk_level, css: rule.css_class };
     }
 
-    history.replaceState(null, '', 'dashboard.html');
-    window.location.href = 'dashboard.html';
+    // 4. Оценка доменов (Таблица 4)
+    let evaluatedDomains = {};
+    for (const [domainName, dataObj] of Object.entries(domainScores)) {
+      const evaluated = getRisk(dataObj.score, domainRules, dataObj.id);
+      evaluatedDomains[domainName] = { score: dataObj.score, ...evaluated };
+    }
+
+    // 5. Оценка категорий (Таблица 5)
+    let evaluatedCategories = {};
+    for (const [catName, dataObj] of Object.entries(categoryScores)) {
+      const evaluated = getRisk(dataObj.score, categoryRules, dataObj.id);
+      evaluatedCategories[catName] = { score: dataObj.score, ...evaluated };
+    }
+
+    // 6. Оценка итогового глобального риска (Таблица 6)
+    const globalEvaluated = getRisk(totalScore, globalRules);
+    const globalRiskText = globalEvaluated.risk;
+
+    // 7. Формирование пакета данных для сохранения
+    const payloadToSupabase = {
+      user_id: currentUser ? currentUser.id : null,
+      total_score: totalScore,
+      global_risk: globalRiskText,
+      domain_scores: evaluatedDomains,
+      category_scores: evaluatedCategories,
+      total_time_seconds: qualityCheck.totalTimeSeconds,
+      validity_status: qualityCheck.validityStatus,
+      quality_flags: qualityCheck.flags,
+      audit_metrics: qualityCheck.metrics,
+      created_at: new Date().toISOString()
+    };
+
+    // Сохранение в БД
+    const { error: insertError } = await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
+    if (insertError) {
+      console.warn("Предупреждение: не удалось сохранить в таблицу nom035_survey_results:", insertError.message);
+    }
+
+    // Дублирование в сессию для мгновенного отображения в панели
+    sessionStorage.setItem('nom035_last_result', JSON.stringify({
+      totalScore,
+      globalRisk: globalRiskText,
+      domainScores: evaluatedDomains,
+      categoryScores: evaluatedCategories,
+      totalTime: qualityCheck.totalTimeSeconds,
+      validityStatus: qualityCheck.validityStatus
+    }));
+
+  } catch (err) {
+    console.error("Error crítico al procesar el dictamen oficial:", err.message);
+    alert("Hubo un error crítico al procesar las tablas oficiales de riesgo.");
   }
-  checkAuthAndInit();
+
+  history.replaceState(null, '', 'dashboard.html');
+  window.location.href = 'dashboard.html';
+}
+ 
 </script>
 
 </body>
