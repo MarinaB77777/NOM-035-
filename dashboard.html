@@ -49,8 +49,6 @@
 </div>
 
 <script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.5net/npm/@supabase/supabase-js/+esm' // fixed standard import or keep CDN
-  // Using reliable CDN link:
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
   const supabase = createClient(
@@ -162,7 +160,6 @@
       return;
     }
 
-    // Обработка доменов
     let domainsHtml = '';
     const domains = data.domainScores || {};
     for (const [domainName, val] of Object.entries(domains)) {
@@ -181,7 +178,6 @@
       `;
     }
 
-    // Обработка категорий
     let categoriesHtml = '';
     const categories = data.categoryScores || data.category_scores || {};
     for (const [catName, val] of Object.entries(categories)) {
@@ -265,7 +261,6 @@
   };
 
   window.showDepartmentSelector = async function() {
-    // Сбрасываем привязку в стейте интерфейса для повторного выбора
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
