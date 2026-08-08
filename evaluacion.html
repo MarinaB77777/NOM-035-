@@ -119,27 +119,27 @@
     document.getElementById('quizApp').innerHTML = `<div class="loader">Cargando reactivos de la norma...</div>`;
     try {
       const { data, error } = await supabase
-  .from('v_nom035_questions_complete')
-  .select('*')
-  .order('question_number', { ascending: true });
+        .from('v_nom035_questions_complete')
+        .select('*')
+        .order('question_number', { ascending: true });
 
-if (error) {
-  console.error("Ошибка загрузки вопросов:", error);
-  return;
-}
+      if (error) {
+        console.error("Ошибка загрузки вопросов:", error);
+        return;
+      }
 
-currentQuestions = data.map(q => ({
-  id: q.question_number,
-  question: q.question_text,
-  category: q.category_name,
-  categoryId: q.category_id, // Строгий ID категории (1-5) из созданного View
-  domain: q.domain_name,
-  domainId: q.domain_id,     // Строгий ID домена (1-10) из созданного View
-  inverse: q.is_inverse,
-  scores: q.is_inverse ? 
-      { "Siempre": 4, "Casi siempre": 3, "Algunas veces": 2, "Casi nunca": 1, "Nunca": 0 } :
-      { "Siempre": 0, "Casi siempre": 1, "Algunas veces": 2, "Casi nunca": 3, "Nunca": 4 }
-}));
+      currentQuestions = data.map(q => ({
+        id: q.question_number,
+        question: q.question_text,
+        category: q.category_name,
+        categoryId: q.category_id,
+        domain: q.domain_name,
+        domainId: q.domain_id,
+        inverse: q.is_inverse,
+        scores: q.is_inverse ? 
+            { "Siempre": 4, "Casi siempre": 3, "Algunas veces": 2, "Casi nunca": 1, "Nunca": 0 } :
+            { "Siempre": 0, "Casi siempre": 1, "Algunas veces": 2, "Casi nunca": 3, "Nunca": 4 }
+      }));
 
       renderQuestion();
     } catch (err) {
@@ -240,129 +240,122 @@ currentQuestions = data.map(q => ({
   }
 
   async function handleQuizCompletion() {
-  document.getElementById('quizApp').innerHTML = `
-    <div class="loader">Procesando dictamen estricto según la norma y guardando...</div>
-  `;
+    document.getElementById('quizApp').innerHTML = `
+      <div class="loader">Procesando dictamen estricto según la norma y guardando...</div>
+    `;
 
-  let totalScore = 0;
-  let domainScores = {};
-  let categoryScores = {};
+    let totalScore = 0;
+    let domainScores = {};
+    let categoryScores = {};
 
-  // 1. Суммируем баллы, используя официальные ID из словарей стандарта по имени
-  currentQuestions.forEach(q => {
-    const ans = userAnswers[q.id];
-    const score = q.scores[ans] || 0;
-    totalScore += score;
+    currentQuestions.forEach(q => {
+      const ans = userAnswers[q.id];
+      const score = q.scores[ans] || 0;
+      totalScore += score;
 
-    const domainRealId = domainIdMap[q.domain];
-    if (!domainScores[q.domain]) {
-      domainScores[q.domain] = { score: 0, id: domainRealId };
-    }
-    domainScores[q.domain].score += score;
+      const domainRealId = domainIdMap[q.domain];
+      if (!domainScores[q.domain]) {
+        domainScores[q.domain] = { score: 0, id: domainRealId };
+      }
+      domainScores[q.domain].score += score;
 
-    const categoryRealId = categoryIdMap[q.category];
-    if (!categoryScores[q.category]) {
-      categoryScores[q.category] = { score: 0, id: categoryRealId };
-    }
-    categoryScores[q.category].score += score;
-  });
-  
-  const qualityCheck = evaluateResponseQuality();
+      const categoryRealId = categoryIdMap[q.category];
+      if (!categoryScores[q.category]) {
+        categoryScores[q.category] = { score: 0, id: categoryRealId };
+      }
+      categoryScores[q.category].score += score;
+    });
+    
+    const qualityCheck = evaluateResponseQuality();
 
-  try {
-    // 2. Загружаем официальные таблицы рисков из базы данных параллельно
-    const [domainRiskRes, categoryRiskRes, globalRiskRes] = await Promise.all([
-      supabase.from('nom035_tabla_4_domain_risk').select('*'),
-      supabase.from('nom035_tabla_5_category_risk').select('*'),
-      supabase.from('nom035_tabla_6_global_risk').select('*')
-    ]);
+    try {
+      const [domainRiskRes, categoryRiskRes, globalRiskRes] = await Promise.all([
+        supabase.from('nom035_tabla_4_domain_risk').select('*'),
+        supabase.from('nom035_tabla_5_category_risk').select('*'),
+        supabase.from('nom035_tabla_6_global_risk').select('*')
+      ]);
 
-    if (domainRiskRes.error) throw domainRiskRes.error;
-    if (categoryRiskRes.error) throw categoryRiskRes.error;
-    if (globalRiskRes.error) throw globalRiskRes.error;
+      if (domainRiskRes.error) throw domainRiskRes.error;
+      if (categoryRiskRes.error) throw categoryRiskRes.error;
+      if (globalRiskRes.error) throw globalRiskRes.error;
 
-    const domainRules = domainRiskRes.data;
-    const categoryRules = categoryRiskRes.data;
-    const globalRules = globalRiskRes.data;
+      const domainRules = domainRiskRes.data;
+      const categoryRules = categoryRiskRes.data;
+      const globalRules = globalRiskRes.data;
 
-    // 3. Строгая функция сопоставления с диапазонами стандарта по колонке 'id'
-    function getRisk(score, rules, targetId = null) {
-      const numScore = Number(score);
-      const numTargetId = targetId !== null ? Number(targetId) : null;
+      function getRisk(score, rules, targetId = null) {
+        const numScore = Number(score);
+        const numTargetId = targetId !== null ? Number(targetId) : null;
 
-      const rule = rules.find(r => {
-        const matchScore = numScore >= Number(r.min_score) && numScore <= Number(r.max_score);
-        if (numTargetId !== null) {
-          return Number(r.id) === numTargetId && matchScore;
+        const rule = rules.find(r => {
+          const matchScore = numScore >= Number(r.min_score) && numScore <= Number(r.max_score);
+          if (numTargetId !== null) {
+            return Number(r.id) === numTargetId && matchScore;
+          }
+          return matchScore;
+        });
+
+        if (!rule) {
+          console.error(`[NOM-035 Error] Балл ${numScore} (id: ${numTargetId}) не найден в таблице диапазонов!`);
+          return { risk: "Fuera de rango", css: "gray" };
         }
-        return matchScore;
-      });
 
-      if (!rule) {
-        console.error(`[NOM-035 Error] Балл ${numScore} (id: ${numTargetId}) не найден в таблице диапазонов!`);
-        return { risk: "Fuera de rango", css: "gray" };
+        return { risk: rule.risk_level, css: rule.css_class };
       }
 
-      return { risk: rule.risk_level, css: rule.css_class };
+      let evaluatedDomains = {};
+      for (const [domainName, dataObj] of Object.entries(domainScores)) {
+        const evaluated = getRisk(dataObj.score, domainRules, dataObj.id);
+        evaluatedDomains[domainName] = { score: dataObj.score, ...evaluated };
+      }
+
+      let evaluatedCategories = {};
+      for (const [catName, dataObj] of Object.entries(categoryScores)) {
+        const evaluated = getRisk(dataObj.score, categoryRules, dataObj.id);
+        evaluatedCategories[catName] = { score: dataObj.score, ...evaluated };
+      }
+
+      const globalEvaluated = getRisk(totalScore, globalRules);
+      const globalRiskText = globalEvaluated.risk;
+
+      const payloadToSupabase = {
+        user_id: currentUser ? currentUser.id : null,
+        total_score: totalScore,
+        global_risk: globalRiskText,
+        domain_scores: evaluatedDomains,
+        category_scores: evaluatedCategories,
+        total_time_seconds: qualityCheck.totalTimeSeconds,
+        validity_status: qualityCheck.validityStatus,
+        quality_flags: qualityCheck.flags,
+        audit_metrics: qualityCheck.metrics,
+        created_at: new Date().toISOString()
+      };
+
+      const { error: insertError } = await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
+      if (insertError) {
+        console.warn("Предупреждение: не удалось сохранить в таблицу nom035_survey_results:", insertError.message);
+      }
+
+      sessionStorage.setItem('nom035_last_result', JSON.stringify({
+        totalScore,
+        globalRisk: globalRiskText,
+        domainScores: evaluatedDomains,
+        categoryScores: evaluatedCategories,
+        totalTime: qualityCheck.totalTimeSeconds,
+        validityStatus: qualityCheck.validityStatus
+      }));
+
+    } catch (err) {
+      console.error("Error crítico al procesar el dictamen oficial:", err.message);
+      alert("Hubo un error crítico al procesar las tablas oficiales de riesgo.");
     }
 
-    // 4. Оценка доменов (Таблица 4)
-    let evaluatedDomains = {};
-    for (const [domainName, dataObj] of Object.entries(domainScores)) {
-      const evaluated = getRisk(dataObj.score, domainRules, dataObj.id);
-      evaluatedDomains[domainName] = { score: dataObj.score, ...evaluated };
-    }
-
-    // 5. Оценка категорий (Таблица 5)
-    let evaluatedCategories = {};
-    for (const [catName, dataObj] of Object.entries(categoryScores)) {
-      const evaluated = getRisk(dataObj.score, categoryRules, dataObj.id);
-      evaluatedCategories[catName] = { score: dataObj.score, ...evaluated };
-    }
-
-    // 6. Оценка итогового глобального риска (Таблица 6)
-    const globalEvaluated = getRisk(totalScore, globalRules);
-    const globalRiskText = globalEvaluated.risk;
-
-    // 7. Формирование пакета данных для сохранения
-    const payloadToSupabase = {
-      user_id: currentUser ? currentUser.id : null,
-      total_score: totalScore,
-      global_risk: globalRiskText,
-      domain_scores: evaluatedDomains,
-      category_scores: evaluatedCategories,
-      total_time_seconds: qualityCheck.totalTimeSeconds,
-      validity_status: qualityCheck.validityStatus,
-      quality_flags: qualityCheck.flags,
-      audit_metrics: qualityCheck.metrics,
-      created_at: new Date().toISOString()
-    };
-
-    // Сохранение в БД
-    const { error: insertError } = await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
-    if (insertError) {
-      console.warn("Предупреждение: не удалось сохранить в таблицу nom035_survey_results:", insertError.message);
-    }
-
-    // Дублирование в сессию для мгновенного отображения в панели
-    sessionStorage.setItem('nom035_last_result', JSON.stringify({
-      totalScore,
-      globalRisk: globalRiskText,
-      domainScores: evaluatedDomains,
-      categoryScores: evaluatedCategories,
-      totalTime: qualityCheck.totalTimeSeconds,
-      validityStatus: qualityCheck.validityStatus
-    }));
-
-  } catch (err) {
-    console.error("Error crítico al procesar el dictamen oficial:", err.message);
-    alert("Hubo un error crítico al procesar las tablas oficiales de riesgo.");
+    history.replaceState(null, '', 'dashboard.html');
+    window.location.href = 'dashboard.html';
   }
 
-  history.replaceState(null, '', 'dashboard.html');
-  window.location.href = 'dashboard.html';
-}
- 
+  // Запуск проверки сессии при загрузке страницы
+  checkAuthAndInit();
 </script>
 
 </body>
