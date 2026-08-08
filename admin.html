@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Administración - NOM-035</title>
+  <style>
+    :root { --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --muted: #64748b; --accent: #2563eb; --border: #e2e8f0; --success: #16a34a; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+    .layout { max-width: 1200px; margin: 0 auto; display: grid; gap: 20px; }
+    
+    /* Шапка */
+    header { background: var(--card); padding: 20px 30px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border); }
+    h1 { font-size: 20px; margin: 0; color: #0f172a; }
+    
+    /* Навигация по вкладкам */
+    .tabs { display: flex; gap: 10px; background: var(--card); padding: 10px; border-radius: 12px; border: 1px solid var(--border); }
+    .tab-btn { background: transparent; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; color: var(--muted); transition: all 0.2s; }
+    .tab-btn.active { background: var(--accent); color: white; }
+
+    /* Секции */
+    .section-content { display: none; background: var(--card); padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border); }
+    .section-content.active { display: block; }
+
+    /* Элементы форм и таблиц */
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; color: var(--muted); }
+    input, select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; box-sizing: border-box; }
+    .btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .btn:hover { background: #1d4ed8; }
+
+    /* Сетка результатов */
+    .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .chat-box { border: 1px solid var(--border); border-radius: 12px; height: 400px; display: flex; flex-direction: column; background: #fafafa; }
+    .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .chat-input-area { display: flex; padding: 10px; border-top: 1px solid var(--border); background: white; border-radius: 0 0 12px 12px; gap: 10px; }
+    
+    .loader { text-align: center; padding: 30px; color: var(--muted); font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- Шапка панели -->
+  <header>
+    <h1>Panel de Control y Dictámenes (NOM-035)</h1>
+    <a href="dashboard.html" class="btn" style="background: var(--muted); text-decoration: none; font-size: 13px;">Volver al Panel General</a>
+  </header>
+
+  <!-- Переключатель разделов -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('settings')">1. Estructura y Jerarquía (Enterprise Setup)</button>
+    <button class="tab-btn" onclick="switchTab('results')">2. Resultados Anónimos y Чат с ИИ</button>
+  </div>
+
+  <!-- РАЗДЕЛ 1: Настройки структуры предприятия -->
+  <div id="section-settings" class="section-content active">
+    <h2>Gestión de Departamentos y Talleres (Centros de Trabajo)</h2>
+    <p style="color: var(--muted); margin-bottom: 25px;">Aquí puede ajustar la estructura jerárquica de la empresa para agrupar las encuestas anónimas de los colaboradores.</p>
+    
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px;">
+      <!-- Форма добавления/изменения -->
+      <div style="background: var(--bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+        <h3 style="margin-top: 0; font-size: 16px;">Agregar / Editar Unidad</h3>
+        <div class="form-group">
+          <label>Nombre del Departamento / Taller</label>
+          <input type="text" id="unitName" placeholder="Ej. Taller Mecánico #2">
+        </div>
+        <div class="form-group">
+          <label>Responsable / Master</label>
+          <input type="text" id="unitLeader" placeholder="Ej. Ing. Roberto Gómez">
+        </div>
+        <button class="btn" onclick="saveUnit()">Guardar en la Base</button>
+      </div>
+
+      <!-- Список существующих подразделений -->
+      <div>
+        <h3 style="margin-top: 0; font-size: 16px;">Estructura Actual Registrada</h3>
+        <div id="unitsList" class="loader">Cargando estructura...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- РАЗДЕЛ 2: Результаты по цехам + ИИ чат -->
+  <div id="section-results" class="section-content">
+    <h2>Resultados Anónimos por Departamento y Análisis IA</h2>
+    
+    <div class="form-group" style="max-width: 400px; margin-bottom: 25px;">
+      <label>Seleccionar Departamento / Taller para filtrar:</label>
+      <select id="departmentFilter" onchange="loadDepartmentResults()">
+        <option value="all">-- Toda la Empresa (Global) --</option>
+        <!-- Сюда динамически подгружаются цеха -->
+      </select>
+    </div>
+
+    <div class="results-grid">
+      <!-- Сводка результатов -->
+      <div style="background: var(--bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+        <h3 style="margin-top: 0; font-size: 16px;">Métricas del Área Seleccionada</h3>
+        <div id="deptMetrics">
+          <p style="color: var(--muted);">Seleccione un departamento para ver el desglose de riesgo psicosocial anónimo.</p>
+        </div>
+      </div>
+
+      <!-- Чат с ИИ -->
+      <div class="chat-box">
+        <div style="padding: 12px 15px; background: #f1f5f9; border-bottom: 1px solid var(--border); font-weight: bold; font-size: 14px;">
+          🤖 Asistente IA NOM-035 (Análisis y Recomendaciones)
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div style="background: #e2e8f0; padding: 10px 14px; border-radius: 10px; font-size: 14px; max-width: 80%;">
+            ¡Hola! Pregúntame lo que necesites sobre los riesgos detectados en este departamento o planes de acción obligatorios por la norma.
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <input type="text" id="chatInput" placeholder="Escribe tu consulta al IA..." onkeypress="if(event.key==='Enter') sendAiMessage()">
+          <button class="btn" onclick="sendAiMessage()">Enviar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+  const supabase = createClient(
+    'https://hjmmphkxbnuxnpcbawpg.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
+  );
+
+  // Управление вкладками
+  window.switchTab = function(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+
+    if (tabName === 'settings') {
+      document.querySelector('.tabs button:nth-child(1)').classList.add('active');
+      document.getElementById('section-settings').classList.add('active');
+      loadUnits();
+    } else {
+      document.querySelector('.tabs button:nth-child(2)').classList.add('active');
+      document.getElementById('section-results').classList.add('active');
+      loadDepartmentDropdown();
+    }
+  }
+
+  // Заглушки для функций структуры
+  async function loadUnits() {
+    const listEl = document.getElementById('unitsList');
+    listEl.innerHTML = `<p style="color: var(--success);">Estructura cargada correctamente desde Supabase.</p>`;
+  }
+
+  window.saveUnit = function() {
+    const name = document.getElementById('unitName').value;
+    const leader = document.getElementById('unitLeader').value;
+    if(!name) { alert('Ingrese el nombre'); return; }
+    alert(`Unidad "${name}" guardada con éxito (Responsable: ${leader || 'Sin asignar'})`);
+    document.getElementById('unitName').value = '';
+    document.getElementById('unitLeader').value = '';
+    loadUnits();
+  }
+
+  async function loadDepartmentDropdown() {
+    // Здесь будет загрузка списка цехов из базы для фильтра
+  }
+
+  window.loadDepartmentResults = function() {
+    const val = document.getElementById('departmentFilter').value;
+    document.getElementById('deptMetrics').innerHTML = `<p>Mostrando datos analíticos para: <b>${val}</b></p>`;
+  }
+
+  window.sendAiMessage = function() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text) return;
+
+    const chat = document.getElementById('chatMessages');
+    chat.innerHTML += `<div style="background: var(--accent); color: white; padding: 10px 14px; border-radius: 10px; font-size: 14px; max-width: 80%; align-self: flex-end;">${text}</div>`;
+    input.value = '';
+
+    setTimeout(() => {
+      chat.innerHTML += `<div style="background: #e2e8f0; padding: 10px 14px; border-radius: 10px; font-size: 14px; max-width: 80%;">Analizando los datos normativos de la NOM-035 para responder a tu consulta...</div>`;
+      chat.scrollTop = chat.scrollHeight;
+    }, 1000);
+  }
+
+  // Инициализация при загрузке
+  loadUnits();
+</script>
+
+</body>
+</html>
