@@ -334,9 +334,9 @@
       created_at: new Date().toISOString()
     };
 
-    const { error: insertError } = await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
+    const { error: insertError } = await supabase.from('survey_results').insert([payloadToSupabase]);
     if (insertError) {
-      console.warn("Предупреждение: не удалось сохранить в таблицу nom035_survey_results:", insertError.message);
+      console.warn("Предупреждение: не удалось сохранить в таблицу survey_results:", insertError.message);
     }
 
     sessionStorage.setItem('nom035_last_result', JSON.stringify({
