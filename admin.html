@@ -9,71 +9,83 @@
     body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
     .layout { max-width: 1200px; margin: 0 auto; display: grid; gap: 20px; }
     
-    /* Шапка */
     header { background: var(--card); padding: 20px 30px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border); }
     h1 { font-size: 20px; margin: 0; color: #0f172a; }
     
-    /* Навигация по вкладкам */
     .tabs { display: flex; gap: 10px; background: var(--card); padding: 10px; border-radius: 12px; border: 1px solid var(--border); }
     .tab-btn { background: transparent; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; color: var(--muted); transition: all 0.2s; }
     .tab-btn.active { background: var(--accent); color: white; }
 
-    /* Секции */
     .section-content { display: none; background: var(--card); padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid var(--border); }
     .section-content.active { display: block; }
 
-    /* Элементы форм и таблиц */
     .form-group { margin-bottom: 15px; }
     label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; color: var(--muted); }
     input, select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; box-sizing: border-box; }
     .btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
     .btn:hover { background: #1d4ed8; }
 
-    /* Сетка результатов */
     .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .chat-box { border: 1px solid var(--border); border-radius: 12px; height: 400px; display: flex; flex-direction: column; background: #fafafa; }
     .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
     .chat-input-area { display: flex; padding: 10px; border-top: 1px solid var(--border); background: white; border-radius: 0 0 12px 12px; gap: 10px; }
     
+    .unit-card { background: var(--bg); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
     .loader { text-align: center; padding: 30px; color: var(--muted); font-weight: bold; }
   </style>
 </head>
 <body>
 
+<!-- Окно авторизации администратора -->
+<div id="adminLoginOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+  <div style="background: white; padding: 35px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 15px 35px rgba(0,0,0,0.3);">
+    <h2 style="margin-top: 0; font-size: 20px; color: #0f172a; margin-bottom: 10px;">Acceso Exclusivo Administrador</h2>
+    <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Sistema NOM-035 - Panel de Control Gerencial</p>
+    
+    <div style="margin-bottom: 15px;">
+      <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569;">Usuario</label>
+      <input type="text" id="adminUser" placeholder="admin_master" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box;">
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #475569;">Contraseña</label>
+      <input type="password" id="adminPass" placeholder="••••••••••••" style="width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box;" onkeypress="if(event.key==='Enter') verifyAdminLogin()">
+    </div>
+
+    <button onclick="verifyAdminLogin()" style="width: 100%; padding: 12px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;">Ingresar al Panel</button>
+  </div>
+</div>
+
 <div class="layout">
-  <!-- Шапка панели -->
   <header>
     <h1>Panel de Control y Dictámenes (NOM-035)</h1>
-    <a href="dashboard.html" class="btn" style="background: var(--muted); text-decoration: none; font-size: 13px;">Volver al Panel General</a>
+    <button onclick="logoutAdmin()" class="btn" style="background: #dc2626; font-size: 13px;">Cerrar Sesión</button>
   </header>
 
-  <!-- Переключатель разделов -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('settings')">1. Estructura y Jerarquía (Enterprise Setup)</button>
+    <button class="tab-btn active" onclick="switchTab('settings')">1. Estructura y Jerarquía (Talleres / Departamentos)</button>
     <button class="tab-btn" onclick="switchTab('results')">2. Resultados Anónimos y Чат с ИИ</button>
   </div>
 
-  <!-- РАЗДЕЛ 1: Настройки структуры предприятия -->
+  <!-- РАЗДЕЛ 1: Настройки структуры -->
   <div id="section-settings" class="section-content active">
     <h2>Gestión de Departamentos y Talleres (Centros de Trabajo)</h2>
-    <p style="color: var(--muted); margin-bottom: 25px;">Aquí puede ajustar la estructura jerárquica de la empresa para agrupar las encuestas anónimas de los colaboradores.</p>
+    <p style="color: var(--muted); margin-bottom: 25px;">Ajuste la estructura jerárquica para agrupar las evaluaciones anónimas.</p>
     
     <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px;">
-      <!-- Форма добавления/изменения -->
       <div style="background: var(--bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
-        <h3 style="margin-top: 0; font-size: 16px;">Agregar / Editar Unidad</h3>
+        <h3 style="margin-top: 0; font-size: 16px;">Agregar Nueva Unidad</h3>
         <div class="form-group">
           <label>Nombre del Departamento / Taller</label>
           <input type="text" id="unitName" placeholder="Ej. Taller Mecánico #2">
         </div>
         <div class="form-group">
-          <label>Responsable / Master</label>
+          <label>Responsable / Master (Opcional)</label>
           <input type="text" id="unitLeader" placeholder="Ej. Ing. Roberto Gómez">
         </div>
         <button class="btn" onclick="saveUnit()">Guardar en la Base</button>
       </div>
 
-      <!-- Список существующих подразделений -->
       <div>
         <h3 style="margin-top: 0; font-size: 16px;">Estructura Actual Registrada</h3>
         <div id="unitsList" class="loader">Cargando estructura...</div>
@@ -81,20 +93,18 @@
     </div>
   </div>
 
-  <!-- РАЗДЕЛ 2: Результаты по цехам + ИИ чат -->
+  <!-- РАЗДЕЛ 2: Результаты и ИИ чат -->
   <div id="section-results" class="section-content">
     <h2>Resultados Anónimos por Departamento y Análisis IA</h2>
     
     <div class="form-group" style="max-width: 400px; margin-bottom: 25px;">
       <label>Seleccionar Departamento / Taller para filtrar:</label>
-      <select id="departmentFilter" onchange="loadDepartmentResults()">
+      <select id="departmentFilter">
         <option value="all">-- Toda la Empresa (Global) --</option>
-        <!-- Сюда динамически подгружаются цеха -->
       </select>
     </div>
 
     <div class="results-grid">
-      <!-- Сводка результатов -->
       <div style="background: var(--bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
         <h3 style="margin-top: 0; font-size: 16px;">Métricas del Área Seleccionada</h3>
         <div id="deptMetrics">
@@ -102,14 +112,13 @@
         </div>
       </div>
 
-      <!-- Чат с ИИ -->
       <div class="chat-box">
         <div style="padding: 12px 15px; background: #f1f5f9; border-bottom: 1px solid var(--border); font-weight: bold; font-size: 14px;">
-          🤖 Asistente IA NOM-035 (Análisis y Recomendaciones)
+          🤖 Asistente IA NOM-035
         </div>
         <div class="chat-messages" id="chatMessages">
           <div style="background: #e2e8f0; padding: 10px 14px; border-radius: 10px; font-size: 14px; max-width: 80%;">
-            ¡Hola! Pregúntame lo que necesites sobre los riesgos detectados en este departamento o planes de acción obligatorios por la norma.
+            ¡Hola! Pregúntame sobre los riesgos detectados en este departamento o las normativas obligatorias de la STPS.
           </div>
         </div>
         <div class="chat-input-area">
@@ -119,18 +128,54 @@
       </div>
     </div>
   </div>
-
 </div>
 
 <script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
   const supabase = createClient(
     'https://hjmmphkxbnuxnpcbawpg.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
   );
 
-  // Управление вкладками
+  function checkSession() {
+    if (sessionStorage.getItem('nom035_admin_auth') === 'true') {
+      document.getElementById('adminLoginOverlay').style.display = 'none';
+      loadUnits();
+    }
+  }
+
+  window.verifyAdminLogin = async function() {
+    const userField = document.getElementById('adminUser').value.trim();
+    const passField = document.getElementById('adminPass').value.trim();
+
+    if (!userField || !passField) {
+      alert('Por favor complete ambos campos.');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('nom035_admins')
+      .select('*')
+      .eq('username', userField)
+      .eq('password', passField)
+      .single();
+
+    if (error || !data) {
+      alert('Credenciales incorrectas.');
+      return;
+    }
+
+    sessionStorage.setItem('nom035_admin_auth', 'true');
+    document.getElementById('adminLoginOverlay').style.display = 'none';
+    loadUnits();
+  };
+
+  window.logoutAdmin = function() {
+    sessionStorage.removeItem('nom035_admin_auth');
+    location.reload();
+  };
+
   window.switchTab = function(tabName) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
@@ -144,31 +189,94 @@
       document.getElementById('section-results').classList.add('active');
       loadDepartmentDropdown();
     }
-  }
+  };
 
-  // Заглушки для функций структуры
+  // Загрузка структуры из таблицы nom035_departments
   async function loadUnits() {
     const listEl = document.getElementById('unitsList');
-    listEl.innerHTML = `<p style="color: var(--success);">Estructura cargada correctamente desde Supabase.</p>`;
+    listEl.innerHTML = `<p class="loader">Cargando...</p>`;
+
+    const { data, error } = await supabase
+      .from('nom035_departments')
+      .select('*')
+      .order('id', { ascending: true });
+
+    if (error) {
+      listEl.innerHTML = `<p style="color: #dc2626;">Error al cargar: ${error.message}</p>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      listEl.innerHTML = `<p style="color: var(--muted);">No hay departamentos o talleres registrados aún.</p>`;
+      return;
+    }
+
+    let html = '';
+    data.forEach(unit => {
+      html += `
+        <div class="unit-card">
+          <div>
+            <strong>${unit.name}</strong><br>
+            <span style="font-size: 12px; color: var(--muted);">Responsable: ${unit.leader || 'Sin asignar'}</span>
+          </div>
+          <button onclick="deleteUnit(${unit.id})" style="background: #ef4444; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;">Eliminar</button>
+        </div>
+      `;
+    });
+    listEl.innerHTML = html;
   }
 
-  window.saveUnit = function() {
-    const name = document.getElementById('unitName').value;
-    const leader = document.getElementById('unitLeader').value;
-    if(!name) { alert('Ingrese el nombre'); return; }
-    alert(`Unidad "${name}" guardada con éxito (Responsable: ${leader || 'Sin asignar'})`);
+  // Сохранение нового цеха/отдела
+  window.saveUnit = async function() {
+    const name = document.getElementById('unitName').value.trim();
+    const leader = document.getElementById('unitLeader').value.trim();
+
+    if (!name) {
+      alert('Ingrese el nombre del departamento o taller.');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('nom035_departments')
+      .insert([{ name, leader }]);
+
+    if (error) {
+      alert('Error al guardar: ' + error.message);
+      return;
+    }
+
     document.getElementById('unitName').value = '';
     document.getElementById('unitLeader').value = '';
     loadUnits();
-  }
+  };
+
+  // Удаление цеха/отдела
+  window.deleteUnit = async function(id) {
+    if (!confirm('¿Está seguro de eliminar esta unidad?')) return;
+
+    const { error } = await supabase
+      .from('nom035_departments')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert('Error al eliminar: ' + error.message);
+      return;
+    }
+    loadUnits();
+  };
 
   async function loadDepartmentDropdown() {
-    // Здесь будет загрузка списка цехов из базы для фильтра
-  }
-
-  window.loadDepartmentResults = function() {
-    const val = document.getElementById('departmentFilter').value;
-    document.getElementById('deptMetrics').innerHTML = `<p>Mostrando datos analíticos para: <b>${val}</b></p>`;
+    const select = document.getElementById('departmentFilter');
+    const { data } = await supabase.from('nom035_departments').select('*').order('name');
+    
+    let options = `<option value="all">-- Toda la Empresa (Global) --</option>`;
+    if (data) {
+      data.forEach(d => {
+        options += `<option value="${d.id}">${d.name} (${d.leader || 'Sin responsable'})</option>`;
+      });
+    }
+    select.innerHTML = options;
   }
 
   window.sendAiMessage = function() {
@@ -184,10 +292,9 @@
       chat.innerHTML += `<div style="background: #e2e8f0; padding: 10px 14px; border-radius: 10px; font-size: 14px; max-width: 80%;">Analizando los datos normativos de la NOM-035 para responder a tu consulta...</div>`;
       chat.scrollTop = chat.scrollHeight;
     }, 1000);
-  }
+  };
 
-  // Инициализация при загрузке
-  loadUnits();
+  checkSession();
 </script>
 
 </body>
