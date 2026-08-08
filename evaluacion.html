@@ -283,79 +283,81 @@
       const categoryRules = categoryRiskRes.data;
       const globalRules = globalRiskRes.data;
 
-      function getRisk(score, rules, targetId = null) {
-        const numScore = Number(score);
-        const numTargetId = targetId !== null ? Number(targetId) : null;
+     // 1. Точная функция с указанием конкретной колонки связи для стандарта NOM-035
+    function getRisk(score, rules, targetId = null, idColumnName = 'id') {
+      const numScore = Number(score);
+      const numTargetId = targetId !== null ? Number(targetId) : null;
 
-        const rule = rules.find(r => {
-          const matchScore = numScore >= Number(r.min_score) && numScore <= Number(r.max_score);
-          if (numTargetId !== null) {
-            return Number(r.id) === numTargetId && matchScore;
-          }
-          return matchScore;
-        });
-
-        if (!rule) {
-          console.error(`[NOM-035 Error] Балл ${numScore} (id: ${numTargetId}) не найден в таблице диапазонов!`);
-          return { risk: "Fuera de rango", css: "gray" };
+      const rule = rules.find(r => {
+        const matchScore = numScore >= Number(r.min_score) && numScore <= Number(r.max_score);
+        if (numTargetId !== null) {
+          return Number(r[idColumnName]) === numTargetId && matchScore;
         }
+        return matchScore;
+      });
 
-        return { risk: rule.risk_level, css: rule.css_class };
+      if (!rule) {
+        return { risk: "Fuera de rango", css: "gray" };
       }
 
-      let evaluatedDomains = {};
-      for (const [domainName, dataObj] of Object.entries(domainScores)) {
-        const evaluated = getRisk(dataObj.score, domainRules, dataObj.id);
-        evaluatedDomains[domainName] = { score: dataObj.score, ...evaluated };
-      }
-
-      let evaluatedCategories = {};
-      for (const [catName, dataObj] of Object.entries(categoryScores)) {
-        const evaluated = getRisk(dataObj.score, categoryRules, dataObj.id);
-        evaluatedCategories[catName] = { score: dataObj.score, ...evaluated };
-      }
-
-      const globalEvaluated = getRisk(totalScore, globalRules);
-      const globalRiskText = globalEvaluated.risk;
-
-      const payloadToSupabase = {
-        user_id: currentUser ? currentUser.id : null,
-        total_score: totalScore,
-        global_risk: globalRiskText,
-        domain_scores: evaluatedDomains,
-        category_scores: evaluatedCategories,
-        total_time_seconds: qualityCheck.totalTimeSeconds,
-        validity_status: qualityCheck.validityStatus,
-        quality_flags: qualityCheck.flags,
-        audit_metrics: qualityCheck.metrics,
-        created_at: new Date().toISOString()
-      };
-
-      const { error: insertError } = await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
-      if (insertError) {
-        console.warn("Предупреждение: не удалось сохранить в таблицу nom035_survey_results:", insertError.message);
-      }
-
-      sessionStorage.setItem('nom035_last_result', JSON.stringify({
-        totalScore,
-        globalRisk: globalRiskText,
-        domainScores: evaluatedDomains,
-        categoryScores: evaluatedCategories,
-        totalTime: qualityCheck.totalTimeSeconds,
-        validityStatus: qualityCheck.validityStatus
-      }));
-
-    } catch (err) {
-      console.error("Error crítico al procesar el dictamen oficial:", err.message);
-      alert("Hubo un error crítico al procesar las tablas oficiales de riesgo.");
+      return { risk: rule.risk_level, css: rule.css_class };
     }
 
-    history.replaceState(null, '', 'dashboard.html');
-    window.location.href = 'dashboard.html';
+    // 2. Оценка доменов (Таблица 4) — строго по колонке 'domain_id'
+    let evaluatedDomains = {};
+    for (const [domainName, dataObj] of Object.entries(domainScores)) {
+      const evaluated = getRisk(dataObj.score, domainRules, dataObj.id, 'domain_id');
+      evaluatedDomains[domainName] = { score: dataObj.score, ...evaluated };
+    }
+
+    // 3. Оценка категорий (Таблица 5) — строго по колонке 'category_id'
+    let evaluatedCategories = {};
+    for (const [catName, dataObj] of Object.entries(categoryScores)) {
+      const evaluated = getRisk(dataObj.score, categoryRules, dataObj.id, 'category_id');
+      evaluatedCategories[catName] = { score: dataObj.score, ...evaluated };
+    }
+
+    // 4. Оценка итогового глобального риска (Таблица 6)
+    const globalEvaluated = getRisk(totalScore, globalRules, null, 'id');
+    const globalRiskText = globalEvaluated.risk;
+
+    const payloadToSupabase = {
+      user_id: currentUser ? currentUser.id : null,
+      total_score: totalScore,
+      global_risk: globalRiskText,
+      domain_scores: evaluatedDomains,
+      category_scores: evaluatedCategories,
+      total_time_seconds: qualityCheck.totalTimeSeconds,
+      validity_status: qualityCheck.validityStatus,
+      quality_flags: qualityCheck.flags,
+      audit_metrics: qualityCheck.metrics,
+      created_at: new Date().toISOString()
+    };
+
+    const { error: insertError } = await supabase.from('nom035_survey_results').insert([payloadToSupabase]);
+    if (insertError) {
+      console.warn("Предупреждение: не удалось сохранить в таблицу nom035_survey_results:", insertError.message);
+    }
+
+    sessionStorage.setItem('nom035_last_result', JSON.stringify({
+      totalScore,
+      globalRisk: globalRiskText,
+      domainScores: evaluatedDomains,
+      categoryScores: evaluatedCategories,
+      totalTime: qualityCheck.totalTimeSeconds,
+      validityStatus: qualityCheck.validityStatus
+    }));
+
+  } catch (err) {
+    console.error("Error crítico al procesar el dictamen oficial:", err.message);
+    alert("Hubo un error crítico al procesar las tablas oficiales de riesgo.");
   }
 
-  // Запуск проверки сессии при загрузке страницы
-  checkAuthAndInit();
+  history.replaceState(null, '', 'dashboard.html');
+  window.location.href = 'dashboard.html';
+}
+
+checkAuthAndInit();
 </script>
 
 </body>
