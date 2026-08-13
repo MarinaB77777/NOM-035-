@@ -338,7 +338,6 @@
   }
 
   // ВЫСОКОЧУВСТВИТЕЛЬНЫЙ МЕТОД АГРЕГАЦИИ (RMS / Квадратичное среднее)
-  // Реагирует на скачок даже одного значения сильнее, чем обычное среднее
   function getSensitiveAggregatedValue(arr) {
     if (!arr || arr.length === 0) return null;
     const sumSquares = arr.reduce((acc, val) => acc + (val * val), 0);
@@ -383,7 +382,12 @@
     let html = `<div class="dept-metrics-grid">`;
 
     depts.forEach(dept => {
-      const deptProfiles = profiles ? profiles.filter(p => p.department_id === dept.id) : [];
+      // Гибкое сопоставление профилей с отделом (по ID или по имени)
+      const deptProfiles = profiles ? profiles.filter(p => 
+        p.department_id === dept.id || 
+        String(p.department_id) === String(dept.id) || 
+        String(p.department_id).trim().toLowerCase() === String(dept.name).trim().toLowerCase()
+      ) : [];
       
       const pulseValues = [];
       const nomValues = [];
@@ -391,13 +395,13 @@
 
       deptProfiles.forEach(p => {
         if (p.current_pulse !== null && p.current_pulse !== undefined) {
-          pulseValues.push(p.current_pulse);
+          pulseValues.push(Number(p.current_pulse));
         }
         if (latestSurveys[p.id] !== undefined) {
-          nomValues.push(latestSurveys[p.id]);
+          nomValues.push(Number(latestSurveys[p.id]));
         }
         if (p.health_stress_score !== null && p.health_stress_score !== undefined) {
-          healthValues.push(p.health_stress_score);
+          healthValues.push(Number(p.health_stress_score));
         }
       });
 
