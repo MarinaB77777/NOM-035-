@@ -164,7 +164,10 @@
         <option value="all">-- Toda la Empresa (Global) --</option>
       </select>
     </div>
-
+<!-- Добавьте эту кнопку в раздел результатов -->
+<button onclick="calculateAndSaveSummaries()" class="btn" style="background: #059669; margin-bottom: 20px;">
+  🔄 Actualizar Reportes de la Empresa
+</button>
     <div class="results-grid">
       <div style="background: var(--bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
         <h3 style="margin-top: 0; font-size: 16px;">Indicadores Consolidados por Taller</h3>
@@ -345,34 +348,68 @@
   }
 
   // Загрузка метрик: 3 итоговых квадратика на каждый цех
-  window.loadDepartmentMetrics = async function() {
+ window.loadDepartmentMetrics = async function() {
     const selectedDeptId = document.getElementById('departmentFilter').value;
     const metricsEl = document.getElementById('deptMetrics');
-    metricsEl.innerHTML = `<p class="loader">Calculando indicadores de alta sensibilidad...</p>`;
+    metricsEl.innerHTML = `<p class="loader">Cargando reportes seguros...</p>`;
 
-    let deptQuery = supabase.from('nom035_departments').select('*');
+    // Читаем ТОЛЬКО из таблицы итогов (конфиденциальность сохранена)
+    let query = supabase.from('nom035_department_summaries').select('*');
     if (selectedDeptId !== 'all') {
-      deptQuery = deptQuery.eq('id', selectedDeptId);
+        query = query.eq('department_id', selectedDeptId);
     }
-    const { data: depts, error: deptErr } = await deptQuery;
+    
+    const { data: summaries, error: sumErr } = await query;
+    const { data: depts } = await supabase.from('nom035_departments').select('id, name, leader');
 
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, department_id, current_pulse, health_stress_score');
-
-    const { data: surveys } = await supabase
-      .from('survey_results')
-      .select('user_id, total_score')
-      .order('created_at', { ascending: false });
-
-    const latestSurveys = {};
-    if (surveys) {
-      surveys.forEach(s => {
-        if (!latestSurveys[s.user_id]) {
-          latestSurveys[s.user_id] = s.total_score;
-        }
-      });
+    if (sumErr || !summaries || summaries.length === 0) {
+        metricsEl.innerHTML = `<p style="color: var(--muted);">No hay reportes generados. Presione el botón de actualización para calcular los datos.</p>`;
+        return;
     }
+
+    let html = `<div class="dept-metrics-grid">`;
+    summaries.forEach(sum => {
+        const dept = depts?.find(d => d.id === sum.department_id) || { name: 'Desconocido', leader: 'Sin asignar' };
+        
+        html += `
+        <div class="dept-metric-card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <strong style="font-size: 15px; color: #0f172a;">${dept.name}</strong><br>
+              <span style="font-size: 12px; color: var(--muted);">Responsable: ${dept.leader || 'Sin asignar'}</span>
+            </div>
+          </div>
+
+          <div class="indicators-row">
+            <div class="indicator-box">
+              <span>Pulso (RMS)</span>
+              <div class="color-square" style="background-color: ${getHslColor(sum.avg_pulse, 60, 150)};">
+                ${sum.avg_pulse !== null && sum.avg_pulse !== undefined ? sum.avg_pulse : '--'}
+                <small>bpm</small>
+              </div>
+            </div>
+
+            <div class="indicator-box">
+              <span>NOM-035</span>
+              <div class="color-square" style="background-color: ${getHslColor(sum.avg_nom035, 0, 100)};">
+                ${sum.avg_nom035 !== null && sum.avg_nom035 !== undefined ? sum.avg_nom035 : '--'}
+                <small>índice</small>
+              </div>
+            </div>
+
+            <div class="indicator-box">
+              <span>Modelo</span>
+              <div class="color-square" style="background-color: ${getHslColor(sum.avg_health, 0, 100)};">
+                ${sum.avg_health !== null && sum.avg_health !== undefined ? sum.avg_health : '--'}
+                <small>% estrés</small>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+    metricsEl.innerHTML = html;
+};
 
     if (deptErr || !depts || depts.length === 0) {
       metricsEl.innerHTML = `<p style="color: var(--muted);">No hay información disponible para este filtro.</p>`;
