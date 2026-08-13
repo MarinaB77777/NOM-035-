@@ -38,11 +38,11 @@
     .unit-card { background: var(--bg); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
     .loader { text-align: center; padding: 30px; color: var(--muted); font-weight: bold; }
     
-    /* Стили для сетки департаментов и мини-индикаторов телеметрии */
+    /* Сетка итоговых карточек департаментов */
     .dept-metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
       margin-top: 15px;
     }
     .dept-metric-card {
@@ -54,32 +54,40 @@
     .indicators-row {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 12px;
+      gap: 10px;
+      margin-top: 15px;
     }
-    .indicator-mini {
+    .indicator-box {
       text-align: center;
     }
-    .indicator-mini span {
-      font-size: 10px;
+    .indicator-box span {
+      font-size: 11px;
       color: var(--muted);
       text-transform: uppercase;
       display: block;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       font-weight: 700;
     }
-    .color-square-mini {
-      height: 50px;
-      border-radius: 8px;
+    .color-square {
+      height: 60px;
+      border-radius: 10px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 13px;
+      font-size: 15px;
       font-weight: 800;
       color: #ffffff;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
       background-color: #cbd5e1;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.2);
       transition: background-color 0.4s ease;
+    }
+    .color-square small {
+      font-size: 9px;
+      opacity: 0.9;
+      font-weight: 500;
+      margin-top: 2px;
     }
   </style>
 </head>
@@ -109,7 +117,7 @@
   <header>
     <h1>Panel de Control y Dictámenes (NOM-035)</h1>
     <div class="header-actions">
-      <a href="index.html" class="btn btn-secondary" style="font-size: 13px;">🏠 Hogar </a>
+      <a href="index.html" class="btn btn-secondary" style="font-size: 13px;">🏠 Главная</a>
       <button onclick="logoutAdmin()" class="btn" style="background: #dc2626; font-size: 13px;">Cerrar Sesión</button>
     </div>
   </header>
@@ -148,7 +156,7 @@
 
   <!-- РАЗДЕЛ 2: Результаты, телеметрия и ИИ -->
   <div id="section-results" class="section-content">
-    <h2>Resultados Anónimos por Departamento y Sensores</h2>
+    <h2>Resultados Agregados por Departamento (Sensibilidad Alta)</h2>
     
     <div class="form-group" style="max-width: 400px; margin-bottom: 25px;">
       <label>Seleccionar Departamento / Taller para filtrar:</label>
@@ -159,9 +167,9 @@
 
     <div class="results-grid">
       <div style="background: var(--bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
-        <h3 style="margin-top: 0; font-size: 16px;">Métricas y Telemetría por Área</h3>
+        <h3 style="margin-top: 0; font-size: 16px;">Indicadores Consolidados por Taller</h3>
         <div id="deptMetrics">
-          <p style="color: var(--muted);">Seleccione un departamento para consultar las métricas reales y el estado de los sensores.</p>
+          <p style="color: var(--muted);">Seleccione un departamento para consultar los indicadores de alta sensibilidad.</p>
         </div>
       </div>
 
@@ -329,25 +337,30 @@
     loadDepartmentMetrics();
   }
 
-  // Загрузка метрик и расчет средних значений квадратиков телеметрии по цехам
+  // ВЫСОКОЧУВСТВИТЕЛЬНЫЙ МЕТОД АГРЕГАЦИИ (RMS / Квадратичное среднее)
+  // Реагирует на скачок даже одного значения сильнее, чем обычное среднее
+  function getSensitiveAggregatedValue(arr) {
+    if (!arr || arr.length === 0) return null;
+    const sumSquares = arr.reduce((acc, val) => acc + (val * val), 0);
+    return Math.round(Math.sqrt(sumSquares / arr.length));
+  }
+
+  // Загрузка метрик: 3 итоговых квадратика на каждый цех
   window.loadDepartmentMetrics = async function() {
     const selectedDeptId = document.getElementById('departmentFilter').value;
     const metricsEl = document.getElementById('deptMetrics');
-    metricsEl.innerHTML = `<p class="loader">Consultando base de datos y sensores...</p>`;
+    metricsEl.innerHTML = `<p class="loader">Calculando indicadores de alta sensibilidad...</p>`;
 
-    // Загружаем департаменты
     let deptQuery = supabase.from('nom035_departments').select('*');
     if (selectedDeptId !== 'all') {
       deptQuery = deptQuery.eq('id', selectedDeptId);
     }
     const { data: depts, error: deptErr } = await deptQuery;
 
-    // Загружаем профили сотрудников (для пульса и модели здоровья)
     const { data: profiles } = await supabase
       .from('profiles')
       .select('id, department_id, current_pulse, health_stress_score');
 
-    // Загружаем последние результаты опросов NOM-035
     const { data: surveys } = await supabase
       .from('survey_results')
       .select('user_id, total_score')
@@ -372,59 +385,66 @@
     depts.forEach(dept => {
       const deptProfiles = profiles ? profiles.filter(p => p.department_id === dept.id) : [];
       
-      let totalPulse = 0, pulseCount = 0;
-      let totalHealth = 0, healthCount = 0;
-      let totalNom = 0, nomCount = 0;
+      const pulseValues = [];
+      const nomValues = [];
+      const healthValues = [];
 
       deptProfiles.forEach(p => {
-        if (p.current_pulse) {
-          totalPulse += p.current_pulse;
-          pulseCount++;
-        }
-        if (p.health_stress_score) {
-          totalHealth += p.health_stress_score;
-          healthCount++;
+        if (p.current_pulse !== null && p.current_pulse !== undefined) {
+          pulseValues.push(p.current_pulse);
         }
         if (latestSurveys[p.id] !== undefined) {
-          totalNom += latestSurveys[p.id];
-          nomCount++;
+          nomValues.push(latestSurveys[p.id]);
+        }
+        if (p.health_stress_score !== null && p.health_stress_score !== undefined) {
+          healthValues.push(p.health_stress_score);
         }
       });
 
-      const avgPulse = pulseCount > 0 ? Math.round(totalPulse / pulseCount) : null;
-      const avgHealth = healthCount > 0 ? Math.round(totalHealth / healthCount) : null;
-      const avgNom = nomCount > 0 ? Math.round(totalNom / nomCount) : null;
+      // Считаем чувствительным методом (RMS)
+      const aggPulse = getSensitiveAggregatedValue(pulseValues);
+      const aggNom = getSensitiveAggregatedValue(nomValues);
+      const aggHealth = getSensitiveAggregatedValue(healthValues);
 
-      // Рассчитываем цвет по шкале HSL (от зеленого к красному)
-      const pulseColor = getHslColor(avgPulse, 60, 150);
-      const nomColor = getHslColor(avgNom, 0, 100);
-      const healthColor = getHslColor(avgHealth, 0, 100);
+      // Цветовые индикаторы
+      const pulseColor = getHslColor(aggPulse, 60, 150);
+      const nomColor = getHslColor(aggNom, 0, 100);
+      const healthColor = getHslColor(aggHealth, 0, 100);
 
       html += `
         <div class="dept-metric-card">
-          <strong style="font-size: 15px; color: #0f172a;">${dept.name}</strong><br>
-          <span style="font-size: 12px; color: var(--muted);">Responsable: ${dept.leader || 'Sin asignar'}</span><br>
-          <span style="font-size: 11px; color: var(--success); font-weight: 600;">Personal: ${deptProfiles.length} reg.</span>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <strong style="font-size: 15px; color: #0f172a;">${dept.name}</strong><br>
+              <span style="font-size: 12px; color: var(--muted);">Responsable: ${dept.leader || 'Sin asignar'}</span>
+            </div>
+            <span style="background: #e2e8f0; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; color: #334155;">
+              Personal: ${deptProfiles.length}
+            </span>
+          </div>
 
           <div class="indicators-row">
-            <div class="indicator-mini">
-              <span>Pulso</span>
-              <div class="color-square-mini" style="background-color: ${pulseColor};">
-                ${avgPulse !== null ? avgPulse : '--'}
+            <div class="indicator-box">
+              <span>Pulso (RMS)</span>
+              <div class="color-square" style="background-color: ${pulseColor};">
+                ${aggPulse !== null ? aggPulse : '--'}
+                <small>bpm</small>
               </div>
             </div>
 
-            <div class="indicator-mini">
+            <div class="indicator-box">
               <span>NOM-035</span>
-              <div class="color-square-mini" style="background-color: ${nomColor};">
-                ${avgNom !== null ? avgNom : '--'}
+              <div class="color-square" style="background-color: ${nomColor};">
+                ${aggNom !== null ? aggNom : '--'}
+                <small>índice</small>
               </div>
             </div>
 
-            <div class="indicator-mini">
+            <div class="indicator-box">
               <span>Modelo</span>
-              <div class="color-square-mini" style="background-color: ${healthColor};">
-                ${avgHealth !== null ? avgHealth + '%' : '--'}
+              <div class="color-square" style="background-color: ${healthColor};">
+                ${aggHealth !== null ? aggHealth : '--'}
+                <small>% estrés</small>
               </div>
             </div>
           </div>
@@ -436,12 +456,12 @@
     metricsEl.innerHTML = html;
   };
 
-  // Функция расчета цвета от зеленого (120) к красному (0)
+  // Плавный расчет цвета HSL от зеленого к красному
   function getHslColor(value, min, max) {
     if (value === null || value === undefined) return '#cbd5e1';
     const clamped = Math.max(min, Math.min(max, value));
     const ratio = (clamped - min) / (max - min);
-    const hue = (1 - ratio) * 120;
+    const hue = (1 - ratio) * 120; // 120 (зеленый) -> 0 (красный)
     return `hsl(${hue}, 85%, 45%)`;
   }
 
