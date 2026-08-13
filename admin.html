@@ -340,7 +340,6 @@
     loadDepartmentMetrics();
   }
 
-  // MÉTODO DE AGREGACIÓN SENSIBLE (RMS / Квадратичное среднее)
   function getSensitiveAggregatedValue(arr) {
     if (!arr || arr.length === 0) return null;
     const sumSquares = arr.reduce((acc, val) => acc + (val * val), 0);
@@ -355,7 +354,6 @@
     return `hsl(${hue}, 85%, 45%)`;
   }
 
-  // Lectura segura desde la tabla resumen (nom035_department_summaries)
   window.loadDepartmentMetrics = async function() {
     const selectedDeptId = document.getElementById('departmentFilter').value;
     const metricsEl = document.getElementById('deptMetrics');
@@ -376,13 +374,13 @@
 
     let html = `<div class="dept-metrics-grid">`;
     summaries.forEach(sum => {
-        const dept = depts?.find(d => d.id === sum.department_id) || { name: 'Desconocido', leader: 'Sin asignar' };
+        const dept = depts?.find(d => String(d.id) === String(sum.department_id)) || { name: `Departamento #${sum.department_id}`, leader: 'Sin asignar' };
         
         html += `
         <div class="dept-metric-card">
           <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-              <strong style="font-size: 15px; color: #0f172a;">${dept.name}</strong><br>
+              <strong style="font-size: 15px; color: #0f172a;">Taller: ${dept.name}</strong><br>
               <span style="font-size: 12px; color: var(--muted);">Responsable: ${dept.leader || 'Sin asignar'}</span>
             </div>
           </div>
@@ -418,7 +416,6 @@
     metricsEl.innerHTML = html;
   };
 
-  // Cálculo seguro y guardado en la tabla resumen al presionar el botón
   window.calculateAndSaveSummaries = async function() {
     const btn = event.target;
     btn.innerText = "Calculando...";
@@ -438,14 +435,12 @@
 
     const summaries = depts.map(dept => {
         const p = profiles ? profiles.filter(prof => 
-          prof.department_id === dept.id || 
-          String(prof.department_id) === String(dept.id) || 
-          String(prof.department_id).trim().toLowerCase() === String(dept.name).trim().toLowerCase()
+          String(prof.department_id) === String(dept.id)
         ) : [];
         
-        const pulseValues = p.map(prof => prof.current_pulse).filter(v => v !== null && v !== undefined);
-        const nomValues = p.map(prof => latestSurveys[prof.id]).filter(v => v !== undefined);
-        const healthValues = p.map(prof => prof.health_stress_score).filter(v => v !== null && v !== undefined);
+        const pulseValues = p.map(prof => Number(prof.current_pulse)).filter(v => !isNaN(v) && v !== null);
+        const nomValues = p.map(prof => Number(latestSurveys[prof.id])).filter(v => !isNaN(v));
+        const healthValues = p.map(prof => Number(prof.health_stress_score)).filter(v => !isNaN(v) && v !== null);
         
         return { 
           department_id: dept.id, 
