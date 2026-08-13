@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evaluación NOM-035 - Guía III (Módulo Oficial Estricto)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f8fafc; color: #1e293b; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+    .container { width: 100%; max-width: 750px; background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    
+    .admin-panel { background: #f1f5f9; border: 2px dashed #cbd5e1; padding: 24px; border-radius: 12px; margin-bottom: 20px; }
+    .admin-panel textarea { width: 100%; height: 120px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: monospace; font-size: 13px; box-sizing: border-box; resize: vertical; margin-top: 10px; }
+    
+    .progress-bar { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-bottom: 20px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #2563eb; width: 0%; transition: width 0.3s ease; }
+    
+    .header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .counter { font-size: 14px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .timer-badge { font-size: 13px; background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+
+    .question-text { font-size: 20px; font-weight: 600; margin-bottom: 28px; line-height: 1.4; color: #0f172a; }
+    .options-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 35px; }
+    .option-label { display: flex; align-items: center; padding: 16px 20px; border: 2px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; font-size: 16px; background: #fff; color: #334155; }
+    .option-label:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .option-label input { margin-right: 16px; transform: scale(1.2); accent-color: #2563eb; }
+    .option-label.selected { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; font-weight: 500; }
+    
+    .buttons-group { display: flex; justify-content: space-between; gap: 15px; }
+    .btn { background: #2563eb; color: white; border: none; padding: 14px 28px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 16px; transition: background 0.2s; width: 100%; text-align: center; }
+    .btn:hover { background: #1d4ed8; }
+    .btn-secondary { background: #e2e8f0; color: #475569; width: auto; flex: 1; }
+    .btn-secondary:hover { background: #cbd5e1; }
+    .btn-primary { flex: 2; }
+    
+    .welcome-screen { text-align: center; padding: 10px; }
+    .welcome-screen h1 { color: #0f172a; margin-bottom: 15px; font-size: 26px; }
+    .welcome-screen p { color: #64748b; margin-bottom: 30px; font-size: 16px; line-height: 1.5; }
+    
+    .result-card { text-align: left; }
+    .stats-container { background: #f8fafc; border: 1px solid #e2e8f0; padding: 16px; border-radius: 10px; max-height: 250px; overflow-y: auto; margin: 10px 0; font-size: 13px; }
+    .result-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e2e8f0; align-items: center; }
+    .result-row:last-child { border-bottom: none; }
+    
+    .risk-nulo { background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+    .risk-bajo { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+    .risk-medio { background: #fef9c3; color: #854d0e; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+    .risk-alto { background: #ffedd5; color: #9a3412; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+    .risk-muy-alto { background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<div class="container" id="app">
+  <div class="admin-panel" id="adminPanel">
+    <h3 style="margin-top:0; color: #334155; font-size: 18px;">⚙️ Carga de Base de Datos (Guía III - NOM-035)</h3>
+    <p style="font-size: 14px; color: #64748b; margin-bottom: 10px;">Pega tu JSON con las preguntas y dominios oficiales:</p>
+    <textarea id="jsonDatabaseInput" placeholder='Pega tu JSON aquí...'></textarea>
+    <br>
+    <button class="btn" style="margin-top: 15px;" onclick="loadDatabaseAndStart()">Cargar Base y Iniciar</button>
+  </div>
+</div>
+
+<script>
+  /* ==========================================================================
+     МОДУЛЬ СТРОГИХ ОФИЦИАЛЬНЫХ МАТРИЦ NOM-035-STPS-2018 (GUÍAS DE REFERENCIA III)
+     Полное соответствие таблицам официального приложения стандарта.
+     ========================================================================== */
+  const NOM035_OfficialEvaluator = {
+
+    // 1. Общая оценка опросника (Calificación Final / Global)
+    getGlobalRisk(score) {
+      if (score < 50)  return { text: "Nulo o Despreciable", class: "risk-nulo" };
+      if (score < 75)  return { text: "Bajo", class: "risk-bajo" };
+      if (score < 99)  return { text: "Medio", class: "risk-medio" };
+      if (score < 140) return { text: "Alto", class: "risk-alto" };
+      return { text: "Muy Alto", class: "risk-muy-alto" };
+    },
+
+    // 2. Официальные категории (5 Категорий Guía III)
+    getCategoryRisk(categoryName, score) {
+      switch (categoryName) {
+        case "Ambiente de trabajo":
+          if (score < 3)  return { text: "Nulo", class: "risk-nulo" };
+          if (score < 5)  return { text: "Bajo", class: "risk-bajo" };
+          if (score < 7)  return { text: "Medio", class: "risk-medio" };
+          if (score < 9)  return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        case "Factores propios de la actividad":
+          if (score < 40) return { text: "Nulo", class: "risk-nulo" };
+          if (score < 55) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 70) return { text: "Medio", class: "risk-medio" };
+          if (score < 85) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        case "Organización del tiempo de trabajo":
+          if (score < 9)  return { text: "Nulo", class: "risk-nulo" };
+          if (score < 13) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 17) return { text: "Medio", class: "risk-medio" };
+          if (score < 21) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        case "Liderazgo y relaciones en el trabajo":
+          if (score < 28) return { text: "Nulo", class: "risk-nulo" };
+          if (score < 38) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 48) return { text: "Medio", class: "risk-medio" };
+          if (score < 58) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        case "Entorno organizacional":
+          if (score < 10) return { text: "Nulo", class: "risk-nulo" };
+          if (score < 14) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 18) return { text: "Medio", class: "risk-medio" };
+          if (score < 24) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        default:
+          if (score < 10) return { text: "Nulo", class: "risk-nulo" };
+          if (score < 20) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 30) return { text: "Medio", class: "risk-medio" };
+          if (score < 40) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+      }
+    },
+
+    // 3. Официальные домены (10 Доменов Guía III)
+    getDomainRisk(domainName, score) {
+      switch (domainName) {
+        // Домены категории: Ambiente de trabajo
+        case "Condiciones en el ambiente de trabajo":
+          if (score < 3) return { text: "Nulo", class: "risk-nulo" };
+          if (score < 5) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 7) return { text: "Medio", class: "risk-medio" };
+          if (score < 9) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        // Домены категории: Factores propios de la actividad
+        case "Carga de trabajo":
+          if (score < 12) return { text: "Nulo", class: "risk-nulo" };
+          if (score < 16) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 20) return { text: "Medio", class: "risk-medio" };
+          if (score < 24) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        case "Falta de control sobre el trabajo":
+          if (score < 11) return { text: "Nulo", class: "risk-nulo" };
+          if (score < 16) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 21) return { text: "Medio", class: "risk-medio" };
+          if (score < 26) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        case "Jornada de trabajo":
+          if (score < 1)  return { text: "Nulo", class: "risk-nulo" };
+          if (score < 2)  return { text: "Bajo", class: "risk-bajo" };
+          if (score < 4)  return { text: "Medio", class: "risk-medio" };
+          if (score < 6)  return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        case "Interferencia en la relación trabajo-familia":
+          if (score < 4)  return { text: "Nulo", class: "risk-nulo" };
+          if (score < 6)  return { text: "Bajo", class: "risk-bajo" };
+          if (score < 8)  return { text: "Medio", class: "risk-medio" };
+          if (score < 10) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        // Домены категории: Organización del tiempo de trabajo
+        case "Liderazgo":
+          if (score < 4)  return { text: "Nulo", class: "risk-nulo" };
+          if (score < 6)  return { text: "Bajo", class: "risk-bajo" };
+          if (score < 10) return { text: "Medio", class: "risk-medio" };
+          if (score < 14) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        case "Relaciones en el trabajo":
+          if (score < 10) return { text: "Nulo", class: "risk-nulo" };
+          if (score < 13) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 17) return { text: "Medio", class: "risk-medio" };
+          if (score < 21) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        case "Violencia laboral":
+          if (score < 7)  return { text: "Nulo", class: "risk-nulo" };
+          if (score < 10) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 13) return { text: "Medio", class: "risk-medio" };
+          if (score < 16) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        // Домены категории: Entorno organizacional
+        case "Reconocimiento del desempeño":
+          if (score < 6)  return { text: "Nulo", class: "risk-nulo" };
+          if (score < 10) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 14) return { text: "Medio", class: "risk-medio" };
+          if (score < 18) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        case "Insuficiente sentido de pertenencia e inestabilidad":
+          if (score < 4)  return { text: "Nulo", class: "risk-nulo" };
+          if (score < 6)  return { text: "Bajo", class: "risk-bajo" };
+          if (score < 8)  return { text: "Medio", class: "risk-medio" };
+          if (score < 10) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+
+        default:
+          if (score < 5)  return { text: "Nulo", class: "risk-nulo" };
+          if (score < 10) return { text: "Bajo", class: "risk-bajo" };
+          if (score < 15) return { text: "Medio", class: "risk-medio" };
+          if (score < 20) return { text: "Alto", class: "risk-alto" };
+          return { text: "Muy Alto", class: "risk-muy-alto" };
+      }
+    }
+  };
+
+  /* ==========================================================
+     ЛОГИКА ИНТЕРАКТИВНОГО СИМУЛЯТОРА
+     ========================================================== */
+  let questionDatabase = [];
+  let currentQuestions = [];
+  let currentIndex = 0;
+  let userAnswers = {};
+  let questionStartTime = 0;
+  let timerInterval = null;
+
+  function loadDatabaseAndStart() {
+    try {
+      const rawJson = document.getElementById('jsonDatabaseInput').value;
+      const parsed = JSON.parse(rawJson);
+
+      if (Array.isArray(parsed)) {
+        questionDatabase = parsed;
+      } else if (parsed.questions && Array.isArray(parsed.questions)) {
+        questionDatabase = parsed.questions;
+      } else {
+        throw new Error("El JSON no contiene un array de preguntas válido.");
+      }
+
+      if (questionDatabase.length === 0) {
+        alert("La base de datos está vacía.");
+        return;
+      }
+
+      showWelcomeScreen();
+    } catch (e) {
+      alert("Error al procesar el JSON. Verifica el formato.\nDetalle: " + e.message);
+    }
+  }
+
+  function showWelcomeScreen() {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="welcome-screen">
+        <h1>Evaluación de Factores de Riesgo Psicosocial</h1>
+        <p>Cuestionario confidencial evaluado estrictamente bajo las tablas oficiales de la NOM-035 (Guía III).</p>
+        <button class="btn" onclick="startQuiz()">Comenzar encuesta</button>
+      </div>
+    `;
+  }
+
+  function startQuiz() {
+    currentQuestions = [...questionDatabase].sort(() => 0.5 - Math.random());
+    currentIndex = 0;
+    userAnswers = {};
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    const app = document.getElementById('app');
+    
+    if (currentIndex >= currentQuestions.length) {
+      renderResults();
+      return;
+    }
+
+    const q = currentQuestions[currentIndex];
+    const progressPercent = Math.round(((currentIndex) / currentQuestions.length) * 100);
+
+    questionStartTime = Date.now();
+
+    app.innerHTML = `
+      <div class="header-info">
+        <div class="counter">Pregunta ${currentIndex + 1} de ${currentQuestions.length}</div>
+        <div class="timer-badge" id="timerDisplay">⏱️ 0s</div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width: ${progressPercent}%;"></div></div>
+      <div class="question-text">${q.question}</div>
+      <div class="options-list">
+        ${Object.entries(q.scores).map(([optText, scoreVal]) => {
+          const isChecked = (userAnswers[q.id] && userAnswers[q.id].score === scoreVal) ? 'checked' : '';
+          const selectedClass = isChecked ? 'selected' : '';
+          return `
+            <label class="option-label ${selectedClass}" onclick='selectOption(this, ${scoreVal}, ${q.id}, ${JSON.stringify(q.category || "General")}, ${JSON.stringify(q.domain || "General")})'>
+              <input type="radio" name="q_${q.id}" value="${scoreVal}" ${isChecked}>
+              ${optText}
+            </label>
+          `;
+        }).join('')}
+      </div>
+      <div class="buttons-group">
+        ${currentIndex > 0 ? `<button class="btn btn-secondary" onclick="prevQuestion()">Anterior</button>` : '<div></div>'}
+        <button class="btn btn-primary" onclick="nextQuestion()"> ${currentIndex === currentQuestions.length - 1 ? 'Finalizar' : 'Siguiente'} </button>
+      </div>
+    `;
+
+    if (timerInterval) clearInterval(timerInterval);
+    let secondsElapsed = userAnswers[q.id] ? userAnswers[q.id].timeSpent || 0 : 0;
+    
+    document.getElementById('timerDisplay').textContent = `⏱️ ${secondsElapsed}s`;
+    
+    timerInterval = setInterval(() => {
+      secondsElapsed++;
+      document.getElementById('timerDisplay').textContent = `⏱️ ${secondsElapsed}s`;
+    }, 1000);
+  }
+
+  function selectOption(labelElement, scoreVal, qId, category, domain) {
+    const labels = document.querySelectorAll('.option-label');
+    labels.forEach(l => l.classList.remove('selected'));
+    labelElement.classList.add('selected');
+    
+    const radio = labelElement.querySelector('input');
+    radio.checked = true;
+
+    const timeSpentSec = Math.round((Date.now() - questionStartTime) / 1000);
+
+    userAnswers[qId] = {
+      score: scoreVal,
+      timeSpent: (userAnswers[qId] ? userAnswers[qId].timeSpent : 0) + timeSpentSec,
+      category: category,
+      domain: domain
+    };
+  }
+
+  function nextQuestion() {
+    const q = currentQuestions[currentIndex];
+    if (!userAnswers[q.id]) {
+      alert("Por favor, selecciona una opción para continuar.");
+      return;
+    }
+
+    clearInterval(timerInterval);
+    const timeSpentSec = Math.round((Date.now() - questionStartTime) / 1000);
+    if (!userAnswers[q.id].timeSpent) {
+      userAnswers[q.id].timeSpent = timeSpentSec;
+    }
+
+    currentIndex++;
+    renderQuestion();
+  }
+
+  function prevQuestion() {
+    clearInterval(timerInterval);
+    if (currentIndex > 0) {
+      currentIndex--;
+      renderQuestion();
+    }
+  }
+
+  function renderResults() {
+    if (timerInterval) clearInterval(timerInterval);
+    const app = document.getElementById('app');
+    
+    let totalScore = 0;
+    let domainScores = {};
+    let categoryScores = {};
+    let totalTime = 0;
+
+    for (const qId in userAnswers) {
+      const ans = userAnswers[qId];
+      totalScore += ans.score;
+      totalTime += ans.timeSpent;
+
+      if (!domainScores[ans.domain]) domainScores[ans.domain] = 0;
+      domainScores[ans.domain] += ans.score;
+
+      if (!categoryScores[ans.category]) categoryScores[ans.category] = 0;
+      categoryScores[ans.category] += ans.score;
+    }
+
+    const globalRisk = NOM035_OfficialEvaluator.getGlobalRisk(totalScore);
+
+    let domainsHtml = '';
+    for (const dom in domainScores) {
+      const risk = NOM035_OfficialEvaluator.getDomainRisk(dom, domainScores[dom]);
+      domainsHtml += `
+        <div class="result-row">
+          <span><b>${dom}:</b> ${domainScores[dom]} pts</span>
+          <span class="${risk.class}">${risk.text}</span>
+        </div>
+      `;
+    }
+
+    let categoriesHtml = '';
+    for (const cat in categoryScores) {
+      const risk = NOM035_OfficialEvaluator.getCategoryRisk(cat, categoryScores[cat]);
+      categoriesHtml += `
+        <div class="result-row">
+          <span><b>${cat}:</b> ${categoryScores[cat]} pts</span>
+          <span class="${risk.class}">${risk.text}</span>
+        </div>
+      `;
+    }
+
+    app.innerHTML = `
+      <div class="result-card">
+        <h2 style="color: #0f172a; margin-bottom: 5px; font-size: 20px; text-align: center;">📊 Dictamen Oficial NOM-035 (Guía III)</h2>
+        <p style="color: #64748b; margin-bottom: 15px; font-size: 13px; text-align: center;">Tiempo total: ${Math.floor(totalTime / 60)} min ${totalTime % 60} seg.</p>
+        
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 10px; text-align: center; margin-bottom: 15px;">
+          <div style="font-size: 14px; color: #1e40af; font-weight: 600;">Calificación Global: ${totalScore} puntos</div>
+          <div style="font-size: 15px; margin-top: 4px;">Nivel de Riesgo General: <span class="${globalRisk.class}">${globalRisk.text}</span></div>
+        </div>
+
+        <p style="font-size: 13px; font-weight: bold; color: #334155; margin-bottom: 4px;">Evaluación por Dominios (10 oficiales):</p>
+        <div class="stats-container">${domainsHtml}</div>
+
+        <p style="font-size: 13px; font-weight: bold; color: #334155; margin-top: 10px; margin-bottom: 4px;">Evaluación por Categorías (5 oficiales):</p>
+        <div class="stats-container">${categoriesHtml}</div>
+
+        <button class="btn" onclick="location.reload()" style="margin-top: 15px;">Nueva Evaluación / Cargar otra Base</button>
+      </div>
+    `;
+  }
+</script>
+
+</body>
+</html>

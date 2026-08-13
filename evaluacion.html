@@ -334,7 +334,11 @@
       created_at: new Date().toISOString()
     };
 
-    const { error: insertError } = await supabase.from('survey_results').insert([payloadToSupabase]);
+    const { data: savedResult, error: insertError } = await supabase
+      .from('survey_results')
+      .insert([payloadToSupabase])
+      .select('*')
+      .maybeSingle();
     if (insertError) {
       console.warn("Предупреждение: не удалось сохранить в таблицу survey_results:", insertError.message);
     }
@@ -345,7 +349,9 @@
       domainScores: evaluatedDomains,
       categoryScores: evaluatedCategories,
       totalTime: qualityCheck.totalTimeSeconds,
-      validityStatus: qualityCheck.validityStatus
+      validityStatus: qualityCheck.validityStatus,
+      resultId: savedResult?.id ?? savedResult?.result_id ?? null,
+      createdAt: payloadToSupabase.created_at
     }));
 
   } catch (err) {

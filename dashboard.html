@@ -295,63 +295,16 @@
         </div>
       </div>
 
-      <!-- Asistente IA integrado -->
       <div class="chat-container">
         <div class="chat-header">
-          💬 Asistente IA - Norma NOM-035
+          🤖 Análisis conjunto explicable
         </div>
-        <div class="chat-messages" id="chatMessages">
-          <div class="chat-msg ai">¡Hola! Soy tu asistente virtual integrado. Puedo ayudarte a interpretar tus puntajes, darte consejos para reducir el estrés laboral o responder dudas sobre la norma NOM-035. ¿En qué te puedo ayudar hoy?</div>
-        </div>
-        <div class="chat-input-row">
-          <input type="text" id="chatInput" class="chat-input" placeholder="Escribe tu pregunta (ej: ¿Cómo mejorar el clima laboral?)">
-          <button class="chat-send" id="chatSendBtn">Enviar</button>
-        </div>
+        <p style="color:#cbd5e1;line-height:1.55;margin:0 0 16px;">El analista compara los dominios oficiales NOM-035 con los bloques correspondientes de Health Model sin mezclar las escalas, sin diagnóstico y sin utilizar respuestas originales.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;"><a class="btn" href="extra_survey.html">Completar Health Model</a><a class="btn" href="ai_analyst.html" style="background:#8b5cf6;">Abrir analista IA</a></div>
       </div>
     `;
 
     setupLogout();
-    setupAIChat(data);
-  }
-
-  function setupAIChat(surveyData) {
-    const sendBtn = document.getElementById('chatSendBtn');
-    const inputField = document.getElementById('chatInput');
-    const messagesContainer = document.getElementById('chatMessages');
-
-    const handleSend = () => {
-      const text = inputField.value.trim();
-      if (!text) return;
-
-      const userDiv = document.createElement('div');
-      userDiv.className = 'chat-msg user';
-      userDiv.textContent = text;
-      messagesContainer.appendChild(userDiv);
-      inputField.value = '';
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-      setTimeout(() => {
-        const aiDiv = document.createElement('div');
-        aiDiv.className = 'chat-msg ai';
-        
-        const lower = text.toLowerCase();
-        if (lower.includes('estrés') || lower.includes('fatiga') || lower.includes('ansiedad') || lower.includes('cansancio')) {
-          aiDiv.textContent = 'Para reducir el estrés conforme a las directrices de la NOM-035, se recomienda tomar descansos regulares, mantener comunicación abierta con tu supervisor y reportar sobrecargas de trabajo a tiempo.';
-        } else if (lower.includes('punto') || lower.includes('puntuacion') || lower.includes('resultado') || lower.includes('score')) {
-          aiDiv.textContent = `Tu puntuación global actual es de ${surveyData.totalScore || surveyData.total_score} puntos, con un nivel de riesgo "${surveyData.globalRisk || surveyData.global_risk}". Estos datos ayudan a mejorar las condiciones en tu área de trabajo.`;
-        } else {
-          aiDiv.textContent = `Es una excelente pregunta. El objetivo principal de la NOM-035 es fomentar un entorno organizacional favorable. Si requieres apoyo específico en tu taller, te sugiero consultarlo directamente con el responsable asignado.`;
-        }
-
-        messagesContainer.appendChild(aiDiv);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      }, 600);
-    };
-
-    sendBtn.addEventListener('click', handleSend);
-    inputField.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') handleSend();
-    });
   }
 
   window.saveUserDepartment = async function() {
