@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NOM-035 & Research OS Bidirectional Bridge</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 30px;
+    }
+    .container { max-width: 1100px; margin: 0 auto; }
+    header { margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; }
+    h1 { margin: 0 0 10px 0; font-size: 24px; color: #f1f5f9; }
+    p { color: var(--text-muted); margin: 0; font-size: 14px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
+    .card h2 { font-size: 16px; margin-top: 0; margin-bottom: 12px; color: #e2e8f0; display: flex; align-items: center; gap: 8px; }
+    .upload-zone { border: 2px dashed var(--border-color); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: border-color 0.2s; margin-bottom: 12px; background: rgba(15, 23, 42, 0.4); }
+    .upload-zone:hover { border-color: var(--accent); }
+    .upload-zone input { display: none; }
+    textarea { width: 100%; height: 200px; background: #0f172a; border: 1px solid var(--border-color); border-radius: 6px; color: #e2e8f0; padding: 12px; font-family: ui-monospace, monospace; font-size: 13px; resize: vertical; margin-bottom: 12px; }
+    .btn-group { display: flex; gap: 10px; margin-top: auto; }
+    button { background-color: var(--accent); color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; transition: background-color 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    button:hover { background-color: var(--accent-hover); }
+    button.secondary { background-color: #475569; }
+    button.secondary:hover { background-color: #334155; }
+    .output-section { margin-top: 25px; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; display: none; }
+    .output-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .output-header h3 { margin: 0; font-size: 16px; color: #f1f5f9; }
+    pre { background: #0f172a; border: 1px solid var(--border-color); border-radius: 6px; padding: 15px; color: #34d399; overflow-x: auto; max-height: 350px; margin: 0; font-family: ui-monospace, monospace; font-size: 12px; }
+    .stats { font-size: 13px; color: var(--success); font-weight: 600; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>⚙️ NOM-035 ⇄ Research OS Bridge</h1>
+    <p>Conversión precisa de los 72 reactivos de la Guía III entre formato estándar, Research OS y matriz para el simulador web.</p>
+  </header>
+
+  <div class="grid">
+    <!-- Блок 1: Из текста NOM в Research OS -->
+    <div class="card">
+      <h2>📥 1. NOM-035 Texto ➔ Research OS</h2>
+      <div class="upload-zone" onclick="document.getElementById('nomFile').click()">
+        <span>📁 Cargar archivo .txt de la NOM</span>
+        <input type="file" id="nomFile" accept=".txt,.text" onchange="handleFileUpload(event, 'nom')">
+      </div>
+      <textarea id="nomInput" placeholder="Pega el texto crudo de la NOM-035 aquí (* G3-Q...)"></textarea>
+      <div class="btn-group">
+        <button onclick="runNomToRos()">Convertir a Research OS</button>
+        <button class="secondary" onclick="document.getElementById('nomInput').value=''">Limpiar</button>
+      </div>
+    </div>
+
+    <!-- Блок 2: Из Research OS в формат Симулятора (Array) -->
+    <div class="card">
+      <h2>📤 2. Research OS JSON ➔ Simulador Guía III</h2>
+      <div class="upload-zone" onclick="document.getElementById('jsonFile').click()">
+        <span>📁 Cargar JSON de Research OS</span>
+        <input type="file" id="jsonFile" accept=".json" onchange="handleFileUpload(event, 'json')">
+      </div>
+      <textarea id="rosInput" placeholder="Pega el JSON de Research OS aquí..."></textarea>
+      <div class="btn-group">
+        <button onclick="runRosToSimulator()">Generar para Simulador</button>
+        <button class="secondary" onclick="document.getElementById('rosInput').value=''">Limpiar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="outputSection" class="output-section">
+    <div class="output-header">
+      <h3 id="outputTitle">Resultado de la Operación</h3>
+      <div style="display:flex; gap:10px;">
+        <button class="secondary" onclick="downloadResult()">💾 Descargar Archivo</button>
+        <button onclick="copyToClipboard()">📋 Copiar</button>
+      </div>
+    </div>
+    <div id="statsMsg" class="stats"></div>
+    <pre id="outputContent"></pre>
+  </div>
+</div>
+
+<script>
+  let currentResultText = "";
+  let currentFileName = "result.json";
+
+  function handleFileUpload(event, type) {
+    const file = event.target.files[0];
+    if (!file) return;
+    currentFileName = file.name;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      if (type === 'nom') {
+        document.getElementById('nomInput').value = e.target.result;
+      } else {
+        document.getElementById('rosInput').value = e.target.result;
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // 1. Парсинг текста NOM в Research OS JSON (строго до 72 вопросов)
+  function runNomToRos() {
+    const rawText = document.getElementById('nomInput').value;
+    if (!rawText.trim()) {
+      alert("Por favor ingresa o carga texto de la NOM-035.");
+      return;
+    }
+
+    const blocks = rawText.split(/\*\s*G3-Q/);
+    const questions = {};
+    const questionOrder = [];
+
+    for (let i = 1; i < blocks.length; i++) {
+      const block = blocks[i];
+      const numMatch = block.match(/^0*(\d+)/);
+      const questionNum = (numMatch && parseInt(numMatch[1], 10) > 0) ? parseInt(numMatch[1], 10) : i;
+      const qNum = String(questionNum).padStart(2, '0');
+      
+      const code = `NOM_G3_Q${qNum}`;
+      questionOrder.push(code);
+
+      const textMatch = block.match(/\*\s*(?:Texto|Текст):\s*([^\n\r]+)/i);
+      const categoryMatch = block.match(/\*\s*(?:Categoría|Категория):\s*([^\n\r]+)/i);
+      const scoresMatch = block.match(/\*\s*(?:Puntuación|Баллы):\s*([^\n\r]+)/i);
+
+      if (textMatch) {
+        const options = [];
+        if (scoresMatch) {
+          const pairs = scoresMatch[1].split('|');
+          pairs.forEach(pair => {
+            if (pair.includes('=')) {
+              const parts = pair.split('=');
+              const k = parts[0].trim();
+              const v = parseInt(parts[1].trim(), 10);
+              if (!isNaN(v)) {
+                options.push({ value: v, text: k });
+              }
+            }
+          });
+        }
+
+        questions[code] = {
+          question_id: `nom-g3-q-${qNum}`,
+          code: code,
+          version: 1,
+          domain: categoryMatch ? categoryMatch[1].trim() : "General",
+          type: "single_select",
+          prompt: textMatch[1].trim(),
+          options: options,
+          status: "active"
+        };
+      }
+    }
+
+    const resultObj = {
+      schema: "research_os.question_bank",
+      schema_version: 2,
+      bank_id: "nom-035-guia-iii-production",
+      code: "NOM_035_G3",
+      title: "NOM-035-STPS-2018 Guía III - Production Export",
+      generated_at: new Date().toISOString(),
+      question_order: questionOrder,
+      questions: questions
+    };
+
+    currentResultText = JSON.stringify(resultObj, null, 2);
+    currentFileName = "nom_035_research_os.json";
+    showOutput("Convertido a Research OS JSON", `Reactivos procesados: ${questionOrder.length}`, currentResultText);
+  }
+
+  // 2. Конвертация из Research OS JSON в формат массива для симулятора Guía_III.html
+  function runRosToSimulator() {
+    const rawJson = document.getElementById('rosInput').value;
+    if (!rawJson.trim()) {
+      alert("Por favor ingresa o carga un JSON de Research OS.");
+      return;
+    }
+
+    try {
+      const data = JSON.parse(rawJson);
+      const questionsObj = data.questions || {};
+      const order = (data.question_order && data.question_order.length > 0) 
+        ? data.question_order 
+        : Object.keys(questionsObj);
+
+      const simulatorArray = [];
+
+      order.forEach((code, index) => {
+        const q = questionsObj[code];
+        if (!q) return;
+
+        // Превращаем массив options в объект scores {"Текст": балл}
+        const scoresMap = {};
+        if (Array.isArray(q.options)) {
+          q.options.forEach(opt => {
+            scoresMap[opt.text] = opt.value;
+          });
+        }
+
+        simulatorArray.push({
+          id: index + 1,
+          code: code,
+          question: q.prompt || "",
+          category: q.domain || "General",
+          domain: q.domain || "General",
+          scores: scoresMap
+        });
+      });
+
+      if (simulatorArray.length === 0) {
+        alert("El JSON no contiene preguntas válidas.");
+        return;
+      }
+
+      currentResultText = JSON.stringify(simulatorArray, null, 2);
+      currentFileName = "nom035_simulator_database.json";
+      showOutput("Adaptado para el Simulador Guía III", `Elementos en el array: ${simulatorArray.length}`, currentResultText);
+    } catch (err) {
+      alert("Error al parsear el JSON: " + err.message);
+    }
+  }
+
+  function showOutput(title, stats, content) {
+    document.getElementById('outputTitle').textContent = title;
+    document.getElementById('statsMsg').textContent = stats;
+    document.getElementById('outputContent').textContent = content;
+    document.getElementById('outputSection').style.display = 'block';
+    document.getElementById('outputSection').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function copyToClipboard() {
+    navigator.clipboard.writeText(currentResultText).then(() => {
+      alert("¡Copiado al portapapeles!");
+    });
+  }
+
+  function downloadResult() {
+    const blob = new Blob([currentResultText], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = currentFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+</script>
+
+</body>
+</html>

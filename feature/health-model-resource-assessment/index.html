@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">Panel de Control NOM-035</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --purple: #8b5cf6;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      margin: 0;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .container { max-width: 1000px; margin: 0 auto; flex: 1; width: 100%; }
+    header { text-align: center; margin-bottom: 40px; position: relative; }
+    h1 { margin: 0 0 10px 0; font-size: 28px; color: #f1f5f9; }
+    p { color: var(--text-muted); font-size: 15px; margin: 0; }
+    
+    .lang-switcher {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 6px 12px;
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .lang-switcher:hover { border-color: var(--accent); }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+    }
+    .card h3 { margin-top: 0; font-size: 18px; color: #f1f5f9; display: flex; align-items: center; gap: 10px; }
+    .card p { font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
+    
+    .btn {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      text-align: center;
+      transition: background-color 0.2s;
+      display: inline-block;
+    }
+    .btn:hover { background-color: var(--accent-hover); }
+    .btn.secondary { background-color: #475569; }
+    .btn.secondary:hover { background-color: #334155; }
+    .btn.purple { background-color: var(--purple); }
+    .btn.purple:hover { background-color: #7c3aed; }
+    .btn.warning { background-color: var(--warning); color: #0f172a; font-weight: bold; }
+    .btn.warning:hover { background-color: #d97706; }
+
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 13px;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <button class="lang-switcher" onclick="toggleLanguage()" id="langBtn">🇲🇽 ES / 🇺🇸 EN</button>
+    <h1 id="main-title">🚀 Panel de Control NOM-035</h1>
+    <p id="main-subtitle">Plataforma de gestión, conversión, evaluación e inteligencia analítica de riesgos psicosociales.</p>
+  </header>
+
+  <div class="grid">
+    <!-- Карточка 1: Авторизация -->
+    <div class="card">
+      <div>
+        <h3 id="c1-title">🔐 Acceso y Registro Anónimo</h3>
+        <p id="c1-desc">Punto de entrada para colaboradores mediante usuario único y contraseña (vía QR).</p>
+      </div>
+      <a href="auth.html" class="btn purple" data-btn="auth">Ir al Acceso</a>
+    </div>
+
+    <!-- Карточка 2: Панель Администратора -->
+    <div class="card">
+      <div>
+        <h3 id="c2-title">⚙️ Panel de Administración</h3>
+        <p id="c2-desc">Gestión de la estructura de talleres, departamentos y supervisión gerencial de resultados anónimos.</p>
+      </div>
+      <a href="admin.html" class="btn secondary" data-btn="admin">Ir al Panel</a>
+    </div>
+
+    <!-- Карточка 3: Оценка -->
+    <div class="card">
+      <div>
+        <h3 id="c3-title">📋 Simulador / Módulo de Evaluación</h3>
+        <p id="c3-desc">Cuestionario confidencial evaluado estrictamente bajo las tablas oficiales de la NOM-035 (Guía III).</p>
+      </div>
+      <a href="evaluacion.html" class="btn" data-btn="start">Iniciar Evaluación</a>
+    </div>
+
+    <!-- Карточка 4: Доп. опросник -->
+    <div class="card">
+      <div>
+        <h3 id="c4-title">📝 Evaluación Complementaria de Recursos</h3>
+        <p id="c4-desc">Protocolo Health Model de 70 preguntas: recursos, recuperación, dinámica y marcadores, con consentimiento por sesión.</p>
+      </div>
+      <a href="extra_survey.html" class="btn warning" data-btn="survey">Iniciar Evaluación de Recursos</a>
+    </div>
+
+    <!-- Карточка 5: Психологическая карта -->
+    <div class="card">
+      <div>
+        <h3 id="c5-title">🗺️ Mapa Integrado de Evidencias</h3>
+        <p id="c5-desc">Comparación por bloques entre recursos, marcadores, sensores y dominios relacionados de NOM-035.</p>
+      </div>
+      <a href="psych_map.html" class="btn purple" data-btn="map">Ver Mapa en Vivo</a>
+    </div>
+
+    <!-- Карточка 6: ИИ Аналитик -->
+    <div class="card">
+      <div>
+        <h3 id="c6-title">🤖 IA Analítico</h3>
+        <p id="c6-desc">Explicación asistida de resultados conjuntos, discrepancias e incertidumbre, sin diagnóstico ni decisiones laborales individuales.</p>
+      </div>
+      <a href="ai_analyst.html" class="btn purple" data-btn="ai">Abrir IA Analítico</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  CRM Sharks &amp; Ray + Gemini + TU UNIVERSIDAD PODRÍA ESTAR AQUÍ
+</footer>
+
+<script>
+  const translations = {
+    es: {
+      title: "Panel de Control NOM-035",
+      mainTitle: "🚀 Panel de Control NOM-035",
+      mainSubtitle: "Plataforma de gestión, conversión, evaluación e inteligencia analítica de riesgos psicosociales.",
+      c1Title: "🔐 Acceso y Registro Anónimo",
+      c1Desc: "Punto de entrada para colaboradores mediante usuario único y contraseña (vía QR).",
+      c2Title: "⚙️ Panel de Administración",
+      c2Desc: "Gestión de la estructura de talleres, departamentos y supervisión gerencial de resultados anónimos.",
+      c3Title: "📋 Simulador / Módulo de Evaluación",
+      c3Desc: "Cuestionario confidencial evaluado estrictamente bajo las tablas oficiales de la NOM-035 (Guía III).",
+      c4Title: "📝 Evaluación Complementaria de Recursos",
+      c4Desc: "Protocolo Health Model de 70 preguntas: recursos, recuperación, dinámica y marcadores, con consentimiento por sesión.",
+      c5Title: "🗺️ Mapa Integrado de Evidencias",
+      c5Desc: "Comparación por bloques entre recursos, marcadores, sensores y dominios relacionados de NOM-035.",
+      c6Title: "🤖 IA Analítico",
+      c6Desc: "Explicación asistida de resultados conjuntos, discrepancias e incertidumbre, sin diagnóstico ni decisiones laborales individuales.",
+      btnAuth: "Ir al Acceso",
+      btnAdmin: "Ir al Panel",
+      btnStart: "Iniciar Evaluación",
+      btnSurvey: "Iniciar Evaluación de Recursos",
+      btnMap: "Ver Mapa en Vivo",
+      btnAi: "Abrir IA Analítico",
+      langLabel: "🇺🇸 EN / 🇲🇽 ES"
+    },
+    en: {
+      title: "NOM-035 Control Panel",
+      mainTitle: "🚀 NOM-035 Control Panel",
+      mainSubtitle: "Management, conversion, evaluation, and analytical intelligence platform for psychosocial risks.",
+      c1Title: "🔐 Access & Anonymous Registration",
+      c1Desc: "Entry point for collaborators using a unique username and password (via QR).",
+      c2Title: "⚙️ Admin Panel",
+      c2Desc: "Workshop and department structure management, and managerial supervision of anonymous results.",
+      c3Title: "📋 Simulator / Evaluation Module",
+      c3Desc: "Confidential questionnaire evaluated strictly under official NOM-035 tables (Guide III).",
+      c4Title: "📝 Complementary Resource Assessment",
+      c4Desc: "The 70-question Health Model protocol covering resources, recovery, dynamics, and markers, with consent for each session.",
+      c5Title: "🗺️ Integrated Evidence Map",
+      c5Desc: "Block-by-block comparison of resources, markers, sensors, and related NOM-035 domains.",
+      c6Title: "🤖 AI Analyst",
+      c6Desc: "AI-assisted explanation of joint results, mismatches, and uncertainty, without diagnosis or individual employment decisions.",
+      btnAuth: "Go to Access",
+      btnAdmin: "Go to Panel",
+      btnStart: "Start Evaluation",
+      btnSurvey: "Start Resource Assessment",
+      btnMap: "View Live Map",
+      btnAi: "Open AI Analyst",
+      langLabel: "🇲🇽 ES / 🇺🇸 EN"
+    }
+  };
+
+  let currentLang = 'es';
+
+  function toggleLanguage() {
+    currentLang = currentLang === 'es' ? 'en' : 'es';
+    const t = translations[currentLang];
+
+    document.getElementById('page-title').textContent = t.title;
+    document.getElementById('main-title').textContent = t.mainTitle;
+    document.getElementById('main-subtitle').textContent = t.mainSubtitle;
+    
+    document.getElementById('c1-title').textContent = t.c1Title;
+    document.getElementById('c1-desc').textContent = t.c1Desc;
+    
+    document.getElementById('c2-title').textContent = t.c2Title;
+    document.getElementById('c2-desc').textContent = t.c2Desc;
+    
+    document.getElementById('c3-title').textContent = t.c3Title;
+    document.getElementById('c3-desc').textContent = t.c3Desc;
+    
+    document.getElementById('c4-title').textContent = t.c4Title;
+    document.getElementById('c4-desc').textContent = t.c4Desc;
+    
+    document.getElementById('c5-title').textContent = t.c5Title;
+    document.getElementById('c5-desc').textContent = t.c5Desc;
+    
+    document.getElementById('c6-title').textContent = t.c6Title;
+    document.getElementById('c6-desc').textContent = t.c6Desc;
+
+    document.querySelector('[data-btn="auth"]').textContent = t.btnAuth;
+    document.querySelector('[data-btn="admin"]').textContent = t.btnAdmin;
+    document.querySelector('[data-btn="start"]').textContent = t.btnStart;
+    document.querySelector('[data-btn="survey"]').textContent = t.btnSurvey;
+    document.querySelector('[data-btn="map"]').textContent = t.btnMap;
+    document.querySelector('[data-btn="ai"]').textContent = t.btnAi;
+
+    document.getElementById('langBtn').textContent = t.langLabel;
+    document.documentElement.lang = currentLang;
+  }
+</script>
+
+</body>
+</html>
