@@ -340,20 +340,27 @@
     loadDepartmentMetrics();
   }
 
-  // ВЫСОКОЧУВСТВИТЕЛЬНЫЙ МЕТОД АГРЕГАЦИИ (RMS / Квадратичное среднее)
+  // MÉTODO DE AGREGACIÓN SENSIBLE (RMS / Квадратичное среднее)
   function getSensitiveAggregatedValue(arr) {
     if (!arr || arr.length === 0) return null;
     const sumSquares = arr.reduce((acc, val) => acc + (val * val), 0);
     return Math.round(Math.sqrt(sumSquares / arr.length));
   }
 
-  // Загрузка метрик: 3 итоговых квадратика на каждый цех
- window.loadDepartmentMetrics = async function() {
+  function getHslColor(value, min, max) {
+    if (value === null || value === undefined) return '#cbd5e1';
+    const clamped = Math.max(min, Math.min(max, value));
+    const ratio = (clamped - min) / (max - min);
+    const hue = (1 - ratio) * 120;
+    return `hsl(${hue}, 85%, 45%)`;
+  }
+
+  // Lectura segura desde la tabla resumen (nom035_department_summaries)
+  window.loadDepartmentMetrics = async function() {
     const selectedDeptId = document.getElementById('departmentFilter').value;
     const metricsEl = document.getElementById('deptMetrics');
     metricsEl.innerHTML = `<p class="loader">Cargando reportes seguros...</p>`;
 
-    // Читаем ТОЛЬКО из таблицы итогов (конфиденциальность сохранена)
     let query = supabase.from('nom035_department_summaries').select('*');
     if (selectedDeptId !== 'all') {
         query = query.eq('department_id', selectedDeptId);
@@ -409,105 +416,58 @@
     });
     html += `</div>`;
     metricsEl.innerHTML = html;
-};
+  };
 
-    if (deptErr || !depts || depts.length === 0) {
-      metricsEl.innerHTML = `<p style="color: var(--muted);">No hay información disponible para este filtro.</p>`;
+  // Cálculo seguro y guardado en la tabla resumen al presionar el botón
+  window.calculateAndSaveSummaries = async function() {
+    const btn = event.target;
+    btn.innerText = "Calculando...";
+    
+    const { data: profiles } = await supabase.from('profiles').select('id, department_id, current_pulse, health_stress_score');
+    const { data: surveys } = await supabase.from('survey_results').select('user_id, total_score');
+    const { data: depts } = await supabase.from('nom035_departments').select('id, name');
+
+    if (!depts) {
+      alert("No hay departamentos registrados.");
+      btn.innerText = "🔄 Actualizar Reportes de la Empresa";
       return;
     }
 
-    let html = `<div class="dept-metrics-grid">`;
+    const latestSurveys = {};
+    surveys?.forEach(s => { if (!latestSurveys[s.user_id]) latestSurveys[s.user_id] = s.total_score; });
 
-    depts.forEach(dept => {
-      // Гибкое сопоставление профилей с отделом (по ID или по имени)
-      const deptProfiles = profiles ? profiles.filter(p => 
-        p.department_id === dept.id || 
-        String(p.department_id) === String(dept.id) || 
-        String(p.department_id).trim().toLowerCase() === String(dept.name).trim().toLowerCase()
-      ) : [];
-      
-      const pulseValues = [];
-      const nomValues = [];
-      const healthValues = [];
-
-      deptProfiles.forEach(p => {
-        if (p.current_pulse !== null && p.current_pulse !== undefined) {
-          pulseValues.push(Number(p.current_pulse));
-        }
-        if (latestSurveys[p.id] !== undefined) {
-          nomValues.push(Number(latestSurveys[p.id]));
-        }
-        if (p.health_stress_score !== null && p.health_stress_score !== undefined) {
-          healthValues.push(Number(p.health_stress_score));
-        }
-      });
-
-      // Считаем чувствительным методом (RMS)
-      const aggPulse = getSensitiveAggregatedValue(pulseValues);
-      const aggNom = getSensitiveAggregatedValue(nomValues);
-      const aggHealth = getSensitiveAggregatedValue(healthValues);
-
-      // Цветовые индикаторы
-      const pulseColor = getHslColor(aggPulse, 60, 150);
-      const nomColor = getHslColor(aggNom, 0, 100);
-      const healthColor = getHslColor(aggHealth, 0, 100);
-
-      html += `
-        <div class="dept-metric-card">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-              <strong style="font-size: 15px; color: #0f172a;">${dept.name}</strong><br>
-              <span style="font-size: 12px; color: var(--muted);">Responsable: ${dept.leader || 'Sin asignar'}</span>
-            </div>
-            <span style="background: #e2e8f0; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; color: #334155;">
-              Personal: ${deptProfiles.length}
-            </span>
-          </div>
-
-          <div class="indicators-row">
-            <div class="indicator-box">
-              <span>Pulso (RMS)</span>
-              <div class="color-square" style="background-color: ${pulseColor};">
-                ${aggPulse !== null ? aggPulse : '--'}
-                <small>bpm</small>
-              </div>
-            </div>
-
-            <div class="indicator-box">
-              <span>NOM-035</span>
-              <div class="color-square" style="background-color: ${nomColor};">
-                ${aggNom !== null ? aggNom : '--'}
-                <small>índice</small>
-              </div>
-            </div>
-
-            <div class="indicator-box">
-              <span>Modelo</span>
-              <div class="color-square" style="background-color: ${healthColor};">
-                ${aggHealth !== null ? aggHealth : '--'}
-                <small>% estrés</small>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
+    const summaries = depts.map(dept => {
+        const p = profiles ? profiles.filter(prof => 
+          prof.department_id === dept.id || 
+          String(prof.department_id) === String(dept.id) || 
+          String(prof.department_id).trim().toLowerCase() === String(dept.name).trim().toLowerCase()
+        ) : [];
+        
+        const pulseValues = p.map(prof => prof.current_pulse).filter(v => v !== null && v !== undefined);
+        const nomValues = p.map(prof => latestSurveys[prof.id]).filter(v => v !== undefined);
+        const healthValues = p.map(prof => prof.health_stress_score).filter(v => v !== null && v !== undefined);
+        
+        return { 
+          department_id: dept.id, 
+          avg_pulse: getSensitiveAggregatedValue(pulseValues), 
+          avg_nom035: getSensitiveAggregatedValue(nomValues), 
+          avg_health: getSensitiveAggregatedValue(healthValues) 
+        };
     });
 
-    html += `</div>`;
-    metricsEl.innerHTML = html;
+    const { error } = await supabase.from('nom035_department_summaries').upsert(summaries);
+    
+    if (error) { 
+      alert("Error al guardar resúmenes: " + error.message); 
+    } else { 
+      alert("¡Reportes actualizados correctamente!"); 
+    }
+    
+    btn.innerText = "🔄 Actualizar Reportes de la Empresa";
+    loadDepartmentMetrics();
   };
-
-  // Плавный расчет цвета HSL от зеленого к красному
-  function getHslColor(value, min, max) {
-    if (value === null || value === undefined) return '#cbd5e1';
-    const clamped = Math.max(min, Math.min(max, value));
-    const ratio = (clamped - min) / (max - min);
-    const hue = (1 - ratio) * 120; // 120 (зеленый) -> 0 (красный)
-    return `hsl(${hue}, 85%, 45%)`;
-  }
 
   checkSession();
 </script>
-
 </body>
 </html>
