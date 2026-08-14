@@ -471,5 +471,101 @@
 
   checkSession();
 </script>
+  // 1. Функция глобального обновления через серверную базу данных
+async function handleUpdateCompanyReports() {
+    try {
+        const btn = document.getElementById('updateReportsBtn');
+        if (btn) btn.disabled = true;
+
+        // Вызываем защищенную функцию в Supabase, которая считает ВСЕ цехи сразу
+        const { error } = await supabase.rpc('refresh_all_department_summaries');
+        if (error) throw error;
+
+        // Перезагружаем карточки на экране
+        await loadDepartmentMetrics();
+        console.log("Отчеты компании успешно обновлены для всех цехов");
+    } catch (err) {
+        console.error("Ошибка при обновлении отчетов:", err.message);
+        alert("Не удалось обновить отчеты: " + err.message);
+    } finally {
+        const btn = document.getElementById('updateReportsBtn');
+        if (btn) btn.disabled = false;
+    }
+}
+
+// 2. Функция отрисовки ВСЕХ цехов и их метрик в админке
+window.loadDepartmentMetrics = async function() {
+    const metricsEl = document.getElementById('deptMetrics');
+    if (!metricsEl) return;
+    
+    metricsEl.innerHTML = `<p style="color: var(--muted);">Cargando indicadores...</p>`;
+
+    // Получаем ВСЕ департаменты/цехи из базы
+    const { data: depts, error: deptError } = await supabase
+        .from('nom035_departments')
+        .select('*')
+        .order('id', { ascending: true });
+
+    if (deptError) {
+        console.error("Error loading depts:", deptError);
+        metricsEl.innerHTML = `<p style="color: red;">Error al cargar departamentos</p>`;
+        return;
+    }
+
+    // Получаем ВСЕ предварительно посчитанные сводки
+    const { data: summaries, error: sumError } = await supabase
+        .from('nom035_department_summaries')
+        .select('*');
+
+    if (sumError) {
+        console.error("Error loading summaries:", sumError);
+    }
+
+    const summariesMap = {};
+    if (summaries) {
+        summaries.forEach(s => {
+            summariesMap[Number(s.department_id)] = s;
+        });
+    }
+
+    let html = `<div style="display: flex; flex-direction: column; gap: 15px; margin-top: 10px;">`;
+    
+    if (depts && depts.length > 0) {
+        depts.forEach(dept => {
+            const sum = summariesMap[Number(dept.id)] || { avg_pulse: null, avg_nom035: null, avg_health: null };
+            
+            html += `
+            <div style="background: #fff; border: 1px solid var(--border); padding: 15px; border-radius: 10px;">
+              <strong style="font-size: 15px;">${dept.id}. ${dept.name}</strong>
+              <div style="font-size: 13px; color: var(--muted); margin-bottom: 10px;">Responsable: ${dept.leader || 'Sin asignar'}</div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <div style="background: #f8fafc; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid var(--border);">
+                  <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Pulso (RMS)</div>
+                  <div style="font-size: 18px; font-weight: bold; color: ${sum.avg_pulse !== null ? '#16a34a' : '#64748b'};">${sum.avg_pulse !== null ? sum.avg_pulse + ' bpm' : '--'}</div>
+                </div>
+                <div style="background: #f8fafc; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid var(--border);">
+                  <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">NOM-035</div>
+                  <div style="font-size: 18px; font-weight: bold; color: ${sum.avg_nom035 !== null ? '#dc2626' : '#64748b'};">${sum.avg_nom035 !== null ? sum.avg_nom035 + ' índice' : '--'}</div>
+                </div>
+                <div style="background: #f8fafc; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid var(--border);">
+                  <div style="font-size: 11px; color: var(--muted); text-transform: uppercase;">Modelo</div>
+                  <div style="font-size: 18px; font-weight: bold; color: ${sum.avg_health !== null ? '#16a34a' : '#64748b'};">${sum.avg_health !== null ? sum.avg_health + ' % estrés' : '--'}</div>
+                </div>
+              </div>
+            </div>`;
+        });
+    } else {
+        html += `<p>No hay departamentos registrados.</p>`;
+    }
+    
+    html += `</div>`;
+    metricsEl.innerHTML = html;
+};
+
+// 3. Автозапуск при загрузке страницы и привязка кнопки
+document.addEventListener('DOMContentLoaded', () => {
+    loadDepartmentMetrics();
+    document.getElementById('updateReportsBtn')?.addEventListener('click', handleUpdateCompanyReports);
+});
 </body>
 </html>
