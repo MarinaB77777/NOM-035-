@@ -166,33 +166,32 @@
     </div>
 <!-- Добавьте эту кнопку в раздел результатов -->
 <button onclick="calculateAndSaveSummaries()" class="btn" style="background: #059669; margin-bottom: 20px;">
+ <button id="updateReportsBtn" class="btn" style="margin-bottom: 20px;">
   🔄 Actualizar Reportes de la Empresa
 </button>
-    <div class="results-grid">
-      <div style="background: var(--bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
-        <h3 style="margin-top: 0; font-size: 16px;">Indicadores Consolidados por Taller</h3>
-        <div id="deptMetrics">
-          <p style="color: var(--muted);">Seleccione un departamento para consultar los indicadores de alta sensibilidad.</p>
-        </div>
-      </div>
 
-      <div class="chat-box">
-        <div style="padding: 12px 15px; background: #f1f5f9; border-bottom: 1px solid var(--border); font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
-          <span>🤖 Análisis conjunto explicable</span>
-        </div>
-        <div class="chat-messages">
-          <div style="background: #e2e8f0; padding: 14px; border-radius: 10px; font-size: 14px; line-height:1.5;">
-            El servicio de IA utiliza una clave protegida en Vercel y recibe únicamente resultados derivados. No utiliza respuestas originales, no mezcla las escalas NOM-035 y Health Model y no produce decisiones laborales individuales.
-          </div>
-        </div>
-        <div class="chat-input-area">
-          <a class="btn" href="ai_analyst.html" style="text-decoration:none;text-align:center;width:100%;">Abrir analista IA</a>
-        </div>
+<div class="results-grid">
+  <div style="background: var(--bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+    <h3 style="margin-top: 0; font-size: 16px;">Indicadores Consolidados por Taller</h3>
+    <div id="deptMetrics">
+      <p style="color: var(--muted);">Seleccione un departamento para consultar los indicadores de alta sensibilidad.</p>
+    </div>
+  </div>
+
+  <div class="chat-box">
+    <div style="padding: 12px 15px; background: #f1f5f9; border-bottom: 1px solid var(--border); font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+      <span>🤖 Análisis conjunto explicable</span>
+    </div>
+    <div class="chat-messages">
+      <div style="background: #e2e8f0; padding: 14px; border-radius: 10px; font-size: 14px; line-height:1.5;">
+        El servicio de IA utiliza una clave protegida en Vercel y recibe únicamente resultados derivados. No utiliza respuestas originales, no mezcla las escalas NOM-035 y Health Model y no produce decisiones laborales individuales.
       </div>
+    </div>
+    <div class="chat-input-area">
+      <a class="btn" href="ai_analyst.html" style="text-decoration:none;text-align:center;width:100%;">Abrir analista IA</a>
     </div>
   </div>
 </div>
-
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
