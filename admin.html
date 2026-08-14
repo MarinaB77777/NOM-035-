@@ -359,28 +359,36 @@
     const metricsEl = document.getElementById('deptMetrics');
     metricsEl.innerHTML = `<p class="loader">Cargando reportes seguros...</p>`;
 
-    let query = supabase.from('nom035_department_summaries').select('*');
+    // 1. Obtener TODOS los departamentos registrados
+    let deptQuery = supabase.from('nom035_departments').select('*').order('id', { ascending: true });
     if (selectedDeptId !== 'all') {
-        query = query.eq('department_id', selectedDeptId);
+        deptQuery = deptQuery.eq('id', selectedDeptId);
     }
-    
-    const { data: summaries, error: sumErr } = await query;
-    const { data: depts } = await supabase.from('nom035_departments').select('id, name, leader');
+    const { data: depts, error: deptErr } = await deptQuery;
 
-    if (sumErr || !summaries || summaries.length === 0) {
-        metricsEl.innerHTML = `<p style="color: var(--muted);">No hay reportes generados. Presione el botón de actualización para calcular los datos.</p>`;
+    if (deptErr || !depts || depts.length === 0) {
+        metricsEl.innerHTML = `<p style="color: var(--muted);">No hay departamentos o talleres registrados.</p>`;
         return;
     }
 
+    // 2. Obtener los resúmenes calculados
+    const { data: summaries } = await supabase.from('nom035_department_summaries').select('*');
+    const summariesMap = {};
+    if (summaries) {
+        summaries.forEach(s => {
+            summariesMap[s.department_id] = s;
+        });
+    }
+
     let html = `<div class="dept-metrics-grid">`;
-    summaries.forEach(sum => {
-        const dept = depts?.find(d => String(d.id) === String(sum.department_id)) || { name: `Departamento #${sum.department_id}`, leader: 'Sin asignar' };
+    depts.forEach(dept => {
+        const sum = summariesMap[dept.id] || { avg_pulse: null, avg_nom035: null, avg_health: null };
         
         html += `
         <div class="dept-metric-card">
           <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div>
-              <strong style="font-size: 15px; color: #0f172a;">Taller: ${dept.name}</strong><br>
+              <strong style="font-size: 15px; color: #0f172a;">${dept.name}</strong><br>
               <span style="font-size: 12px; color: var(--muted);">Responsable: ${dept.leader || 'Sin asignar'}</span>
             </div>
           </div>
@@ -450,7 +458,7 @@
         };
     });
 
-    const { error } = await supabase.from('nom035_department_summaries').upsert(summaries);
+    const { error } = await supabase.from('nom035_department_summaries').upsert(summaries, { onConflict: 'department_id' });
     
     if (error) { 
       alert("Error al guardar resúmenes: " + error.message); 
