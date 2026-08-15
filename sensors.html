@@ -3,266 +3,336 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sensores y Telemetría - NOM-035</title>
+  <title>Sensores e indicadores — NOM-035</title>
   <style>
-    :root {
-      --bg: #0f172a;
-      --card: #ffffff;
-      --text: #1e293b;
-      --text-light: #64748b;
-      --accent: #3b82f6;
-      --border: #e2e8f0;
-      --radius: 16px;
-    }
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #f8fafc;
-      color: var(--text);
-      padding: 20px;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-    }
-    .container { width: 100%; max-width: 900px; padding-bottom: 40px; }
-    .card {
-      background: var(--card);
-      padding: 30px;
-      border-radius: var(--radius);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-      border: 1px solid var(--border);
-      margin-bottom: 24px;
-    }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
-    .header h2 { margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; }
-    .btn {
-      background: var(--accent);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 14px;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: background 0.2s;
-    }
-    .btn:hover { background: #2563eb; }
-    .btn-secondary { background: #64748b; }
-    .status-box { padding: 14px 18px; border-radius: 10px; font-size: 14px; margin-bottom: 15px; background: #f1f5f9; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .status-ok { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
-    .status-err { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
-
-    /* Стили для 3 независимых индикаторов */
-    .indicators-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-top: 20px;
-    }
-    .indicator-card {
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 20px;
-      text-align: center;
-    }
-    .indicator-card h4 {
-      margin: 0 0 12px 0;
-      font-size: 12px;
-      color: var(--text-light);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .color-square {
-      width: 100%;
-      height: 70px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      font-weight: 800;
-      color: #ffffff;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-      transition: background-color 0.4s ease;
-      margin-bottom: 10px;
-      background-color: #cbd5e1;
-    }
-    .indicator-value {
-      font-size: 14px;
-      font-weight: 600;
-      color: #1e293b;
-    }
+    :root { --card:#fff; --text:#1e293b; --muted:#64748b; --accent:#3b82f6; --border:#e2e8f0; --radius:16px; }
+    * { box-sizing:border-box; }
+    body { font-family:system-ui,-apple-system,sans-serif; background:#f8fafc; color:var(--text); padding:20px; margin:0; display:flex; justify-content:center; }
+    .container { width:100%; max-width:1050px; padding-bottom:40px; }
+    .card { background:var(--card); padding:30px; border-radius:var(--radius); box-shadow:0 10px 25px -5px rgba(0,0,0,.05); border:1px solid var(--border); margin-bottom:24px; }
+    .header { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:25px; border-bottom:1px solid var(--border); padding-bottom:20px; }
+    .header h2 { margin:0; font-size:22px; font-weight:800; color:#0f172a; }
+    .header p { margin:5px 0 0; color:var(--muted); font-size:13px; }
+    .btn { background:var(--accent); color:#fff; border:0; padding:12px 20px; border-radius:10px; cursor:pointer; font-weight:700; font-size:14px; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+    .btn:hover { background:#2563eb; } .btn:disabled { opacity:.55; cursor:not-allowed; }
+    .btn-secondary { background:#64748b; } .btn-secondary:hover { background:#475569; }
+    .status-box { padding:14px 18px; border-radius:10px; font-size:14px; margin-bottom:15px; background:#f1f5f9; border:1px solid var(--border); }
+    .status-ok { background:#f0fdf4; color:#166534; border-color:#bbf7d0; }
+    .status-warn { background:#fffbeb; color:#92400e; border-color:#fde68a; }
+    .status-err { background:#fef2f2; color:#991b1b; border-color:#fecaca; }
+    .controls { display:grid; grid-template-columns:minmax(180px,1fr) auto auto; gap:12px; align-items:end; margin:22px 0; }
+    label { display:block; color:var(--muted); font-size:12px; font-weight:700; margin-bottom:6px; }
+    select { width:100%; padding:12px; border:1px solid var(--border); border-radius:10px; background:#fff; font-size:14px; }
+    .indicators-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px; margin-top:18px; }
+    .indicator-card { background:#f8fafc; border:1px solid var(--border); border-radius:14px; padding:18px; text-align:center; }
+    .indicator-card h4 { margin:0 0 12px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.45px; }
+    .color-square { width:100%; min-height:76px; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:18px; font-weight:800; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.25); transition:background-color .4s ease; background:#cbd5e1; padding:8px; }
+    .color-square small { font-size:15px; }
+    .indicator-meta { margin-top:9px; display:flex; justify-content:center; gap:8px; color:#334155; font-size:12px; font-weight:700; }
+    .indicator-time { margin-top:5px; color:var(--muted); font-size:11px; }
+    .indicator-n { color:#475569; }
+    .section-heading { margin:0 0 5px; font-size:18px; color:#0f172a; }
+    .section-copy { margin:0 0 16px; color:var(--muted); font-size:13px; line-height:1.55; }
+    .privacy-note { font-size:12px; color:var(--muted); line-height:1.55; border-left:4px solid #94a3b8; padding-left:12px; margin-top:18px; }
+    .consent-box { background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:18px; margin-bottom:20px; }
+    .consent-text { max-height:180px; overflow:auto; white-space:pre-wrap; color:#334155; font-size:13px; line-height:1.55; }
+    .empty { color:var(--muted); padding:16px; border:1px dashed var(--border); border-radius:10px; }
+    footer { text-align:center; color:var(--muted); font-size:12px; padding:8px; }
+    @media(max-width:760px) { .card{padding:20px}.controls{grid-template-columns:1fr}.btn{width:100%} }
   </style>
 </head>
 <body>
-
-<div class="container">
-  <div class="card">
+<main class="container">
+  <section class="card">
     <div class="header">
-      <h2>🛰️ Telemetría y Dispositivos Biométricos</h2>
-      <a href="dashboard.html" class="btn btn-secondary">← Volver al Panel</a>
+      <div>
+        <h2>🛰️ Sensores e indicadores personales</h2>
+        <p>Historial verificable; los datos ausentes nunca se sustituyen por cero.</p>
+      </div>
+      <a href="dashboard.html" class="btn btn-secondary">← Volver al panel</a>
     </div>
 
-    <!-- Статусы подключения -->
-    <div id="gpsStatus" class="status-box">📍 Buscando señal GPS local...</div>
+    <div id="sensorConsent" class="consent-box">
+      <strong>Consentimiento de esta sesión</strong>
+      <p style="color:var(--muted);font-size:13px">Cargando la versión activa…</p>
+    </div>
+
+    <div id="gpsStatus" class="status-box">📍 La ubicación no se solicita automáticamente.</div>
     <div id="pulseStatus" class="status-box">❤️ Sensor de pulso Bluetooth desconectado.</div>
 
-    <div style="text-align: center; margin: 25px 0;">
-      <button onclick="autoConnectSensors()" class="btn" style="font-size: 16px; padding: 14px 28px;">
-        ⚡ Conectar Dispositivos Automáticamente
-      </button>
+    <div class="controls">
+      <div>
+        <label for="activityContext">Contexto de la medición</label>
+        <select id="activityContext">
+          <option value="">Selecciona el contexto real</option>
+          <option value="resting">Reposo</option>
+          <option value="seated">Sentado</option>
+          <option value="light_activity">Actividad ligera</option>
+          <option value="physical_work">Trabajo físico</option>
+        </select>
+      </div>
+      <button id="verifyZoneBtn" class="btn btn-secondary" disabled>📍 Verificar zona laboral</button>
+      <button id="connectPulseBtn" class="btn" disabled>❤️ Conectar pulsómetro</button>
     </div>
+    <button id="finishSessionBtn" class="btn btn-secondary" style="display:none">Finalizar sesión de medición</button>
 
-    <!-- 3 Индикатора (Зеленый -> Желтый -> Красный) -->
-    <div class="indicators-grid">
-      <div class="indicator-card">
-        <h4>Pulso Cardíaco</h4>
-        <div id="squarePulse" class="color-square">--</div>
-        <span id="textPulse" class="indicator-value">-- bpm</span>
-      </div>
+    <p class="privacy-note">La comprobación de zona es puntual. La base conserva únicamente el resultado de la geocerca, la precisión y la hora; no conserva coordenadas, rutas ni seguimiento continuo. El pulso se registra cada 30 segundos mientras el sensor está conectado, y cada persona aporta sólo su última medición válida al agregado del departamento.</p>
+  </section>
 
-      <div class="indicator-card">
-        <h4>Estrés (NOM-035)</h4>
-        <div id="squareNom" class="color-square">--</div>
-        <span id="textNom" class="indicator-value">-- pts</span>
-      </div>
+  <section class="card">
+    <h3 class="section-heading">Mi estado actual</h3>
+    <p class="section-copy">El color del pulso representa desviación respecto de tu propia línea base en el mismo contexto, no un diagnóstico. La línea base requiere al menos cinco observaciones previas.</p>
+    <div id="personalIndicators" class="indicators-grid"><div class="empty">Cargando mediciones…</div></div>
+  </section>
 
-      <div class="indicator-card">
-        <h4>Estrés (Modelo Salud)</h4>
-        <div id="squareModel" class="color-square">--</div>
-        <span id="textModel" class="indicator-value">-- %</span>
-      </div>
-    </div>
+  <section class="card">
+    <h3 class="section-heading">Estado agregado de mi departamento</h3>
+    <p class="section-copy">Sólo se muestran resultados con el tamaño mínimo de celda. No se muestran personas ni contribuciones individuales.</p>
+    <div id="departmentIndicators" class="indicators-grid"><div class="empty">Cargando estado agregado…</div></div>
+  </section>
 
-  </div>
-</div>
+  <footer>CRM Sharks &amp; Ray · NOM-035 + Health Model Research</footer>
+</main>
 
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+  import { indicatorCardHtml, escapeHtml } from './indicator_observatory.js';
 
   const supabase = createClient(
     'https://hjmmphkxbnuxnpcbawpg.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
   );
 
-  let currentPulse = 75;
-  let currentNomStress = 30;
-  let currentHealthStress = 20;
+  let geofenceReceipt = null;
+  let pulseDevice = null;
+  let measurementSessionId = null;
+  let lastPersistedAt = 0;
+  const PERSIST_INTERVAL_MS = 30000;
 
-  async function initTelemetry() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+  function setStatus(id, message, kind = '') {
+    const element = document.getElementById(id);
+    element.className = `status-box${kind ? ` status-${kind}` : ''}`;
+    element.textContent = message;
+  }
+
+  async function requireSession() {
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session) {
       window.location.href = 'auth.html';
+      return false;
+    }
+    return true;
+  }
+
+  async function loadIndicators() {
+    const [personalResponse, departmentResponse] = await Promise.all([
+      supabase.rpc('get_my_current_indicators'),
+      supabase.rpc('get_department_indicator_current', { p_department_id: null })
+    ]);
+
+    const personal = document.getElementById('personalIndicators');
+    if (personalResponse.error) {
+      personal.innerHTML = `<div class="empty">${escapeHtml(personalResponse.error.message)}</div>`;
+    } else if (!personalResponse.data?.length) {
+      personal.innerHTML = '<div class="empty">Todavía no existen mediciones registradas.</div>';
+    } else {
+      personal.innerHTML = personalResponse.data.map(item => indicatorCardHtml(item)).join('');
+    }
+
+    const department = document.getElementById('departmentIndicators');
+    if (departmentResponse.error) {
+      department.innerHTML = `<div class="empty">${escapeHtml(departmentResponse.error.message)}</div>`;
+    } else if (!departmentResponse.data?.length) {
+      department.innerHTML = '<div class="empty">Aún no existen agregados seguros para este departamento.</div>';
+    } else {
+      department.innerHTML = departmentResponse.data.map(item => indicatorCardHtml(item, { aggregate:true })).join('');
+    }
+  }
+
+  async function loadSensorConsent() {
+    const container = document.getElementById('sensorConsent');
+    const { data, error } = await supabase
+      .from('measurement_consent_versions')
+      .select('*')
+      .eq('status', 'active')
+      .order('version', { ascending:false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) {
+      container.innerHTML = `<div class="status-err">No se pudo cargar el consentimiento activo: ${escapeHtml(error?.message || 'ACTIVE_SENSOR_CONSENT_NOT_FOUND')}</div>`;
+      return;
+    }
+    container.innerHTML = `
+      <strong>${escapeHtml(data.title_es)}</strong>
+      <div class="consent-text">${escapeHtml(data.text_es)}</div>
+      <label style="display:flex;gap:9px;align-items:flex-start;margin-top:14px;text-transform:none">
+        <input id="acceptSensorConsent" type="checkbox" style="margin-top:3px">
+        <span>Acepto este consentimiento únicamente para la sesión actual (versión ${Number(data.version)}).</span>
+      </label>
+      <button id="startSensorSessionBtn" class="btn" disabled>Iniciar sesión de medición</button>`;
+    const checkbox = document.getElementById('acceptSensorConsent');
+    const startButton = document.getElementById('startSensorSessionBtn');
+    checkbox.addEventListener('change', () => { startButton.disabled = !checkbox.checked; });
+    startButton.addEventListener('click', startMeasurementSession);
+  }
+
+  async function startMeasurementSession() {
+    const now = new Date();
+    const { data, error } = await supabase.rpc('start_measurement_collection_session', {
+      p_language: 'es-MX',
+      p_client_time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+      p_client_utc_offset_minutes: -now.getTimezoneOffset()
+    });
+    if (error) {
+      setStatus('gpsStatus', '❌ No se inició la sesión: ' + error.message, 'err');
+      return;
+    }
+    measurementSessionId = data;
+    document.getElementById('sensorConsent').innerHTML = '<div class="status-ok">✅ Consentimiento registrado. La sesión de medición está activa.</div>';
+    document.getElementById('verifyZoneBtn').disabled = false;
+    document.getElementById('connectPulseBtn').disabled = false;
+    document.getElementById('finishSessionBtn').style.display = 'inline-flex';
+  }
+
+  async function finishMeasurementSession() {
+    if (!measurementSessionId) return;
+    const { error } = await supabase.rpc('complete_measurement_collection_session', {
+      p_measurement_session_id: measurementSessionId
+    });
+    if (error) {
+      setStatus('pulseStatus', '❌ No se finalizó la sesión: ' + error.message, 'err');
+      return;
+    }
+    if (pulseDevice?.gatt?.connected) pulseDevice.gatt.disconnect();
+    measurementSessionId = null;
+    geofenceReceipt = null;
+    document.getElementById('verifyZoneBtn').disabled = true;
+    document.getElementById('connectPulseBtn').disabled = true;
+    document.getElementById('finishSessionBtn').style.display = 'none';
+    setStatus('gpsStatus', '📍 Sesión finalizada. La ubicación no se está utilizando.');
+    await loadSensorConsent();
+  }
+
+  function getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error('GEOLOCATION_NOT_SUPPORTED'));
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy:true, timeout:15000, maximumAge:0
+      });
+    });
+  }
+
+  async function verifyWorkZone() {
+    const button = document.getElementById('verifyZoneBtn');
+    button.disabled = true;
+    setStatus('gpsStatus', '📍 Verificando la zona laboral…');
+    try {
+      const position = await getCurrentPosition();
+      const { data, error } = await supabase.rpc('verify_work_geofence', {
+        p_measurement_session_id: measurementSessionId,
+        p_latitude: position.coords.latitude,
+        p_longitude: position.coords.longitude,
+        p_accuracy_meters: position.coords.accuracy
+      });
+      if (error) throw error;
+      const receipt = data?.[0];
+      geofenceReceipt = receipt?.verification_status === 'inside_work_zone' ? receipt : null;
+      const messages = {
+        inside_work_zone: '✅ Zona laboral confirmada. Las coordenadas fueron descartadas.',
+        outside_work_zone: '⚠️ El dispositivo está fuera de la zona laboral autorizada.',
+        accuracy_insufficient: '⚠️ La precisión GPS es insuficiente. Intenta de nuevo cerca de una ventana.',
+        no_active_zone: '⚠️ El administrador todavía no configuró una geocerca activa.'
+      };
+      setStatus('gpsStatus', messages[receipt?.verification_status] || '⚠️ No se pudo verificar la zona.', receipt?.verification_status === 'inside_work_zone' ? 'ok' : 'warn');
+    } catch (error) {
+      geofenceReceipt = null;
+      setStatus('gpsStatus', `❌ No se pudo verificar la zona: ${error.message}`, 'err');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function readHeartRate(dataView) {
+    const flags = dataView.getUint8(0);
+    return (flags & 0x01) ? dataView.getUint16(1, true) : dataView.getUint8(1);
+  }
+
+  async function persistPulse(bpm, deviceName) {
+    const context = document.getElementById('activityContext').value;
+    if (!context) {
+      setStatus('pulseStatus', '⚠️ Selecciona el contexto real antes de registrar el pulso.', 'warn');
+      return;
+    }
+    if (!geofenceReceipt || new Date(geofenceReceipt.expires_at).getTime() <= Date.now()) {
+      setStatus('pulseStatus', '⚠️ Verifica nuevamente la zona laboral antes de registrar.', 'warn');
+      return;
+    }
+    if (Date.now() - lastPersistedAt < PERSIST_INTERVAL_MS) return;
+
+    const now = new Date();
+    const { error } = await supabase.rpc('record_pulse_measurement', {
+      p_measurement_session_id: measurementSessionId,
+      p_bpm: bpm,
+      p_measured_at: now.toISOString(),
+      p_activity_context: context,
+      p_geofence_verification_id: geofenceReceipt.verification_id,
+      p_device_alias: deviceName || null,
+      p_client_time_zone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+      p_client_utc_offset_minutes: -now.getTimezoneOffset()
+    });
+    if (error) throw error;
+    lastPersistedAt = Date.now();
+    await loadIndicators();
+  }
+
+  async function connectPulseSensor() {
+    const context = document.getElementById('activityContext').value;
+    if (!context) {
+      setStatus('pulseStatus', '⚠️ Primero selecciona el contexto real de la medición.', 'warn');
+      return;
+    }
+    if (!geofenceReceipt) {
+      setStatus('pulseStatus', '⚠️ Primero confirma que estás dentro de la zona laboral.', 'warn');
+      return;
+    }
+    if (!navigator.bluetooth) {
+      setStatus('pulseStatus', '❌ Web Bluetooth no está disponible en este navegador.', 'err');
       return;
     }
 
-    const { data: profile } = await supabase.from('profiles').select('current_pulse, health_stress_score').eq('id', session.user.id).maybeSingle();
-    const { data: survey } = await supabase.from('survey_results').select('total_score').eq('user_id', session.user.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
-
-    if (profile?.current_pulse) currentPulse = profile.current_pulse;
-    if (profile?.health_stress_score) currentHealthStress = profile.health_stress_score;
-    if (survey?.total_score) currentNomStress = survey.total_score;
-
-    updateAllIndicators();
-    startAutomaticGPS();
-  }
-
-  function startAutomaticGPS() {
-    const gpsBox = document.getElementById('gpsStatus');
-    if ('geolocation' in navigator) {
-      navigator.geolocation.watchPosition(
-        async (position) => {
-          const lat = position.coords.latitude.toFixed(4);
-          const lon = position.coords.longitude.toFixed(4);
-          gpsBox.className = 'status-box status-ok';
-          gpsBox.innerHTML = `📍 GPS conectado: Lat ${lat}, Lon ${lon}`;
-          
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-            await supabase.from('profiles').update({ gps_device_id: `GPS-${lat},${lon}` }).eq('id', session.user.id);
-          }
-        },
-        () => {
-          gpsBox.className = 'status-box status-err';
-          gpsBox.textContent = '⚠️ Señal GPS no disponible.';
-        },
-        { enableHighAccuracy: true }
-      );
-    } else {
-      gpsBox.className = 'status-box status-err';
-      gpsBox.textContent = '❌ Geolocalización no soportada.';
-    }
-  }
-
-  window.autoConnectSensors = async function() {
-    const pulseBox = document.getElementById('pulseStatus');
+    const button = document.getElementById('connectPulseBtn');
+    button.disabled = true;
+    setStatus('pulseStatus', '🔄 Buscando pulsómetro Bluetooth…');
     try {
-      if (!navigator.bluetooth) {
-        alert('Web Bluetooth no soportado en este navegador.');
-        return;
-      }
-      pulseBox.textContent = '🔄 Buscando pulصómetro Bluetooth...';
-      
-      const device = await navigator.bluetooth.requestDevice({
-        filters: [{ services: ['heart_rate'] }]
-      });
-
-      const server = await device.gatt.connect();
+      pulseDevice = await navigator.bluetooth.requestDevice({ filters:[{ services:['heart_rate'] }] });
+      const server = await pulseDevice.gatt.connect();
       const service = await server.getPrimaryService('heart_rate');
       const characteristic = await service.getCharacteristic('heart_rate_measurement');
-
-      characteristic.addEventListener('characteristicvaluechanged', async (event) => {
-        const value = event.target.value;
-        currentPulse = value.getUint8(1);
-        updateAllIndicators();
-
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          await supabase.from('profiles').update({ current_pulse: currentPulse, pulse_device_id: device.name || 'BLE-Sensor' }).eq('id', session.user.id);
-        }
+      characteristic.addEventListener('characteristicvaluechanged', async event => {
+        const bpm = readHeartRate(event.target.value);
+        setStatus('pulseStatus', `❤️ ${bpm} bpm · ${pulseDevice.name || 'Sensor BLE'} · registro cada 30 s`, 'ok');
+        try { await persistPulse(bpm, pulseDevice.name); }
+        catch (error) { setStatus('pulseStatus', `❌ No se guardó la medición: ${error.message}`, 'err'); }
       });
-
+      pulseDevice.addEventListener('gattserverdisconnected', () => {
+        setStatus('pulseStatus', '❤️ Sensor de pulso Bluetooth desconectado.', 'warn');
+        button.disabled = false;
+      });
       await characteristic.startNotifications();
-      pulseBox.className = 'status-box status-ok';
-      pulseBox.innerHTML = `❤️ Conectado a: <strong>${device.name || 'Sensor'}</strong>`;
-    } catch (err) {
-      pulseBox.className = 'status-box status-err';
-      pulseBox.textContent = '⚠️ No se pudo conectar al pulصómetro.';
+      setStatus('pulseStatus', `❤️ Conectado a ${pulseDevice.name || 'sensor BLE'}; esperando medición…`, 'ok');
+    } catch (error) {
+      setStatus('pulseStatus', `⚠️ No se pudo conectar el pulsómetro: ${error.message}`, 'err');
+      button.disabled = false;
     }
-  };
-
-  // Функция расчета цвета от зеленого (120) к красному (0)
-  function setIndicatorColor(squareId, textId, value, unit, min, max) {
-    const square = document.getElementById(squareId);
-    const text = document.getElementById(textId);
-    if (!square || !text) return;
-
-    const clamped = Math.max(min, Math.min(max, value));
-    const ratio = (clamped - min) / (max - min);
-    const hue = (1 - ratio) * 120; // 120 = зелёный, 0 = красный
-
-    square.style.backgroundColor = `hsl(${hue}, 85%, 45%)`;
-    square.textContent = Math.round(value);
-    text.textContent = `${Math.round(value)} ${unit}`;
   }
 
-  function updateAllIndicators() {
-    // Пульс: норма 60 (зеленый), тревога 150+ (красный)
-    setIndicatorColor('squarePulse', 'textPulse', currentPulse, 'bpm', 60, 150);
-    
-    // Стресс NOM: норма 0, высокий риск 100+
-    setIndicatorColor('squareNom', 'textNom', currentNomStress, 'pts', 0, 100);
-    
-    // Стресс модели: норма 0%, высокий риск 100%
-    setIndicatorColor('squareModel', 'textModel', currentHealthStress, '%', 0, 100);
-  }
+  document.getElementById('verifyZoneBtn').addEventListener('click', verifyWorkZone);
+  document.getElementById('connectPulseBtn').addEventListener('click', connectPulseSensor);
+  document.getElementById('finishSessionBtn').addEventListener('click', finishMeasurementSession);
 
-  initTelemetry();
+  if (await requireSession()) {
+    await Promise.all([loadIndicators(), loadSensorConsent()]);
+  }
 </script>
-
 </body>
 </html>

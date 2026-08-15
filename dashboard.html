@@ -26,9 +26,11 @@
       background: #f8fafc; 
       color: var(--text); 
       padding: 20px; 
-      margin: 0; 
-      display: flex; 
-      justify-content: center; 
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
     }
 
     .container { width: 100%; max-width: 1000px; margin-top: 10px; padding-bottom: 60px; }
@@ -94,6 +96,13 @@
 
     .chat-container { background: #1e293b; color: #f8fafc; border-radius: var(--radius); padding: 24px; margin-top: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
     .loader { text-align: center; font-weight: bold; color: var(--text-light); padding: 60px; font-size: 16px; }
+    .indicators-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; }
+    .indicator-card { background:#f8fafc; border:1px solid var(--border); border-radius:14px; padding:16px; text-align:center; }
+    .indicator-card h4 { margin:0 0 10px; color:var(--text-light); font-size:11px; text-transform:uppercase; }
+    .color-square { min-height:72px; border-radius:10px; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; font-weight:800; font-size:15px; text-shadow:0 1px 2px rgba(0,0,0,.25); padding:8px; }
+    .color-square small { font-size:15px; }.indicator-meta,.indicator-time { font-size:11px; color:var(--text-light); margin-top:6px; }.indicator-n{margin-left:5px}
+    .aggregate-note { color:var(--text-light); font-size:12px; line-height:1.55; margin:0 0 16px; }
+    footer { text-align:center; color:var(--text-light); font-size:12px; padding:8px; }
   </style>
 </head>
 <body>
@@ -101,9 +110,11 @@
 <div class="container" id="dashboardApp">
   <div class="loader">✨ Cargando panel de control...</div>
 </div>
+<footer>CRM Sharks &amp; Ray · NOM-035 + Health Model Research</footer>
 
 <script type="module">
   import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+  import { indicatorCardHtml, escapeHtml } from './indicator_observatory.js';
 
   const supabase = createClient(
     'https://hjmmphkxbnuxnpcbawpg.supabase.co',
@@ -158,6 +169,87 @@
     }
 
     renderDashboard(user, profile, departments || [], resultData);
+    await loadDepartmentObservatory(Boolean(profile?.department_id));
+    await loadMeasurementAssignments();
+  }
+
+  function departmentObservatorySection() {
+    return `
+      <div class="card">
+        <div class="section-title">Estado agregado de mi departamento</div>
+        <p class="aggregate-note">Es la misma vista organizacional que recibe el observador del taller: sólo agregados con tamaño de celda seguro, sin personas ni contribuciones individuales.</p>
+        <div id="departmentObservatory" class="indicators-grid"><div class="loader" style="padding:20px">Cargando indicadores seguros…</div></div>
+      </div>`;
+  }
+
+  async function loadDepartmentObservatory(hasDepartment) {
+    const container = document.getElementById('departmentObservatory');
+    if (!container) return;
+    if (!hasDepartment) {
+      container.innerHTML = '<p style="color:var(--text-light)">Selecciona primero tu departamento.</p>';
+      return;
+    }
+    const { data, error } = await supabase.rpc('get_department_indicator_current', { p_department_id: null });
+    if (error) {
+      container.innerHTML = `<p style="color:#b91c1c">${escapeHtml(error.message)}</p>`;
+      return;
+    }
+    if (!data?.length) {
+      container.innerHTML = '<p style="color:var(--text-light)">Todavía no existen agregados seguros para este departamento.</p>';
+      return;
+    }
+    container.innerHTML = data.map(item => indicatorCardHtml(item, { aggregate:true })).join('');
+  }
+
+  function samplingSection() {
+    return `
+      <div class="card">
+        <div class="section-title">Participación en el muestreo</div>
+        <p class="aggregate-note">Este dato se utiliza únicamente para distribuir de forma proporcional la muestra oficial NOM-035. No aparece en los resultados del departamento.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end">
+          <div><label for="samplingStratum">Estrato requerido por la NOM-035</label><select id="samplingStratum"><option value="">Selecciona</option><option value="women">Mujeres</option><option value="men">Hombres</option></select></div>
+          <div><label for="samplingShift">Turno (opcional)</label><input id="samplingShift" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:10px" placeholder="Ej. mañana"></div>
+          <button class="btn" onclick="saveSamplingProfile()">Guardar</button>
+        </div>
+        <div id="samplingMessage" style="font-size:12px;color:var(--text-light);margin-top:10px"></div>
+        <div id="measurementAssignments" class="list-group" style="margin-top:14px"></div>
+      </div>`;
+  }
+
+  window.saveSamplingProfile = async function() {
+    const stratum = document.getElementById('samplingStratum')?.value;
+    const shift = document.getElementById('samplingShift')?.value.trim() || null;
+    const message = document.getElementById('samplingMessage');
+    if (!stratum) {
+      message.textContent = 'Selecciona el estrato de muestreo.';
+      return;
+    }
+    const { error } = await supabase.rpc('set_my_sampling_roster', {
+      p_nom035_sampling_stratum: stratum,
+      p_shift_code: shift
+    });
+    message.textContent = error ? 'No se guardó: ' + error.message : 'Datos de muestreo guardados.';
+    if (!error) await loadMeasurementAssignments();
+  };
+
+  async function loadMeasurementAssignments() {
+    const container = document.getElementById('measurementAssignments');
+    if (!container) return;
+    const { data, error } = await supabase.rpc('get_my_measurement_assignments');
+    if (error) {
+      container.innerHTML = `<p style="color:#b91c1c">${escapeHtml(error.message)}</p>`;
+      return;
+    }
+    if (!data?.length) {
+      container.innerHTML = '<p style="color:var(--text-light)">No hay mediciones aleatorias asignadas en este momento.</p>';
+      return;
+    }
+    container.innerHTML = data.map(item => {
+      const timing = item.scheduled_at
+        ? new Date(item.scheduled_at).toLocaleString('es-MX')
+        : 'Selección oficial sin hora aleatoria';
+      return `<div class="list-item"><span>${escapeHtml(item.protocol_code)}</span><span>${escapeHtml(timing)} · ${escapeHtml(item.assignment_status)}</span></div>`;
+    }).join('');
   }
 
   function renderDashboard(user, profile, departments, data) {
@@ -171,7 +263,7 @@
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
               <h3 style="margin: 0 0 5px 0; color: var(--success-text); font-size: 15px;">📍 Centro de trabajo / Taller asignado</h3>
-              <p style="margin: 0; font-size: 14px; color: #15803d;"><strong>Departamento:</strong> ${dept.name} &bull; <strong>Responsable:</strong> ${dept.leader || 'Sin asignar'}</p>
+              <p style="margin: 0; font-size: 14px; color: #15803d;"><strong>Departamento:</strong> ${escapeHtml(dept.name)} &bull; <strong>Responsable:</strong> ${escapeHtml(dept.leader || 'Sin asignar')}</p>
             </div>
             <button onclick="showDepartmentSelector()" class="btn btn-secondary" style="font-size: 12px; padding: 8px 14px;">Cambiar</button>
           </div>
@@ -180,7 +272,7 @@
     } else {
       let options = `<option value="">-- Selecciona tu taller o departamento --</option>`;
       departments.forEach(d => {
-        options += `<option value="${d.id}">${d.name} (Responsable: ${d.leader || 'Ninguno'})</option>`;
+        options += `<option value="${escapeHtml(d.id)}">${escapeHtml(d.name)} (Responsable: ${escapeHtml(d.leader || 'Ninguno')})</option>`;
       });
 
       departmentSection = `
@@ -211,6 +303,8 @@
             ${headerActionsHtml}
           </div>
           ${departmentSection}
+          ${departmentObservatorySection()}
+          ${samplingSection()}
           <div style="text-align: center; padding: 30px 0;">
             <p style="color: var(--text-light); margin-bottom: 20px; font-size: 15px;">Aún no has realizado la evaluación psicosocial obligatoria (Guía III).</p>
             <a href="evaluacion.html" class="btn" style="font-size: 16px; padding: 14px 28px;">🚀 Realizar Cuestionario (Guía III)</a>
@@ -230,10 +324,10 @@
 
       domainsHtml += `
         <div class="list-item">
-          <span>${domainName}</span>
+          <span>${escapeHtml(domainName)}</span>
           <div style="display: flex; align-items: center; gap: 12px;">
-            ${risk ? `<span class="badge badge-${css}">${risk}</span>` : ''}
-            <strong>${score} pts</strong>
+            ${risk ? `<span class="badge badge-${escapeHtml(css)}">${escapeHtml(risk)}</span>` : ''}
+            <strong>${escapeHtml(score)} pts</strong>
           </div>
         </div>
       `;
@@ -248,10 +342,10 @@
 
       categoriesHtml += `
         <div class="list-item">
-          <span>${catName}</span>
+          <span>${escapeHtml(catName)}</span>
           <div style="display: flex; align-items: center; gap: 12px;">
-            ${risk ? `<span class="badge badge-${css}">${risk}</span>` : ''}
-            <strong>${score} pts</strong>
+            ${risk ? `<span class="badge badge-${escapeHtml(css)}">${escapeHtml(risk)}</span>` : ''}
+            <strong>${escapeHtml(score)} pts</strong>
           </div>
         </div>
       `;
@@ -262,25 +356,27 @@
         <div class="header">
           <div>
             <h2>Panel de Resultados - NOM-035</h2>
-            <p style="margin: 4px 0 0 0; color: var(--text-light); font-size: 13px;">Usuario: ${user.email}</p>
+            <p style="margin: 4px 0 0 0; color: var(--text-light); font-size: 13px;">Usuario: ${escapeHtml(user.email)}</p>
           </div>
           ${headerActionsHtml}
         </div>
 
         ${departmentSection}
+        ${departmentObservatorySection()}
+        ${samplingSection()}
 
         <div class="summary-grid">
           <div class="metric-card">
             <h4>Puntuación Global</h4>
-            <div class="metric-value">${data.totalScore || data.total_score}</div>
+            <div class="metric-value">${escapeHtml(data.totalScore ?? data.total_score ?? '--')}</div>
           </div>
           <div class="metric-card" style="--accent: #8b5cf6;">
             <h4>Nivel de Riesgo</h4>
-            <div class="metric-value" style="font-size: 20px; margin-top: 4px; color: #7c3aed;">${data.globalRisk || data.global_risk || 'Calculado'}</div>
+            <div class="metric-value" style="font-size: 20px; margin-top: 4px; color: #7c3aed;">${escapeHtml(data.globalRisk ?? data.global_risk ?? 'Sin datos')}</div>
           </div>
           <div class="metric-card" style="--accent: #10b981;">
             <h4>Estado de Validez</h4>
-            <div class="metric-value" style="font-size: 16px; margin-top: 8px; color: #059669;">${data.validityStatus || 'Válido'}</div>
+            <div class="metric-value" style="font-size: 16px; margin-top: 8px; color: #059669;">${escapeHtml(data.validityStatus ?? 'Sin datos')}</div>
           </div>
         </div>
 

@@ -15,7 +15,8 @@
 ## Orden seguro de activación
 
 1. Ejecutar `supabase/health_resources_module_v1.sql` en Supabase.
-2. Marcar la cuenta autorizada para editar consentimientos:
+2. Ejecutar `supabase/measurement_observatory_v1.sql` en Supabase. Esta migración añade el historial de mediciones, las sesiones de consentimiento para sensores, las geocercas, los agregados protegidos, los enlaces de observación y las dos aleatorizaciones independientes. Si el módulo Health Model ya está instalado, no es necesario volver a ejecutar el paso 1.
+3. Marcar la cuenta autorizada para editar consentimientos, configurar geocercas y ejecutar los protocolos:
 
    ```sql
    update public.profiles
@@ -23,9 +24,11 @@
    where id = '<UUID de la cuenta Supabase autorizada>';
    ```
 
-3. Configurar en Vercel la variable protegida `GEMINI_API_KEY`.
-4. Opcionalmente configurar `GEMINI_MODEL`; si no se define, el endpoint utiliza `gemini-3.1-flash-lite`.
-5. Publicar el código y verificar una sesión completa en preview antes de promoverla a producción.
+4. Abrir `admin.html`, configurar una geocerca laboral privada por departamento y revisar las versiones activas de consentimiento en `consent_editor.html`.
+5. Registrar el estrato de muestreo de las personas elegibles desde `dashboard.html`; después crear por separado la muestra oficial NOM-035 y la ventana aleatoria de sensores desde `admin.html`.
+6. Configurar en Vercel la variable protegida `GEMINI_API_KEY`.
+7. Opcionalmente configurar `GEMINI_MODEL`; si no se define, el endpoint utiliza `gemini-3.1-flash-lite`.
+8. Publicar el código y verificar una sesión completa en preview antes de promoverla a producción.
 
 ## Contratos de privacidad
 
@@ -35,6 +38,10 @@
 - Una persona puede reanudar sus respuestas solamente mientras la sesión está en curso. Después de completar la sesión, puede ver el resultado seguro, no sus respuestas originales.
 - Las cuentas administrativas no reciben acceso a respuestas críticas individuales.
 - Los agregados de investigación aplican supresión de celdas pequeñas con un mínimo configurable que nunca puede ser menor que cinco.
+- El observador del taller recibe únicamente un enlace temporal con el estado agregado del departamento; no necesita una cuenta y no puede consultar personas.
+- La geolocalización se solicita una sola vez por verificación laboral. El servidor conserva sólo un comprobante de pertenencia a la zona y descarta latitud, longitud y rutas de la persona.
+- Los agregados se actualizan al ingresar una medición válida, no por presencia en línea. Cada persona aporta sólo su medición válida más reciente por indicador dentro de la ventana de 30 días.
+- La severidad exacta queda en la historia interna; la vista protegida usa precisión de cuatro decimales para que el color responda a cada contribución sin mostrar mediciones individuales.
 
 ## Comparación por bloques
 

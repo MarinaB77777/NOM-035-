@@ -55,7 +55,7 @@ export class NOM035OfficialEvaluator {
         case "Algunas veces": return 2;
         case "Casi nunca": return 1;
         case "Nunca": return 0;
-        default: return 0;
+        default: throw new Error(`UNKNOWN_OR_MISSING_ANSWER: ${String(ans)}`);
       }
     } else {
       switch (ans) {
@@ -64,7 +64,7 @@ export class NOM035OfficialEvaluator {
         case "Algunas veces": return 2;
         case "Casi nunca": return 3;
         case "Nunca": return 4;
-        default: return 0;
+        default: throw new Error(`UNKNOWN_OR_MISSING_ANSWER: ${String(ans)}`);
       }
     }
   }
@@ -103,12 +103,47 @@ export class NOM035OfficialEvaluator {
   }
 
   getDomainRisk(domain, score) {
-    // Заглушка-структура под официальные диапазоны доменов (будем заполнять строго по таблицам нормы)
-    return "Pendiente de calibración oficial exacta";
+    const thresholds = {
+      "Condiciones en el ambiente de trabajo": [3, 5, 7, 9],
+      "Carga de trabajo": [12, 16, 20, 24],
+      "Falta de control sobre el trabajo": [11, 16, 21, 26],
+      "Jornada de trabajo": [1, 2, 4, 6],
+      "Interferencia en la relación trabajo-familia": [4, 6, 8, 10],
+      "Liderazgo": [4, 6, 10, 14],
+      "Relaciones en el trabajo": [10, 13, 17, 21],
+      "Violencia laboral": [7, 10, 13, 16],
+      "Reconocimiento del desempeño": [6, 10, 14, 18],
+      "Insuficiente sentido de pertenencia e inestabilidad": [4, 6, 8, 10]
+    };
+    if (!Object.hasOwn(thresholds, domain)) {
+      throw new Error(`UNKNOWN_NOM035_DOMAIN: ${domain}`);
+    }
+    return this.classifyRisk(score, thresholds[domain]);
   }
 
   getCategoryRisk(category, score) {
-    // Заглушка-структура под официальные диапазоны категорий (будем заполнять строго по таблицам нормы)
-    return "Pendiente de calibración oficial exacta";
+    const thresholds = {
+      "Ambiente de trabajo": [3, 5, 7, 9],
+      "Factores propios de la actividad": [40, 55, 70, 85],
+      "Organización del tiempo de trabajo": [9, 13, 17, 21],
+      "Liderazgo y relaciones en el trabajo": [28, 38, 48, 58],
+      "Entorno organizacional": [10, 14, 18, 24]
+    };
+    if (!Object.hasOwn(thresholds, category)) {
+      throw new Error(`UNKNOWN_NOM035_CATEGORY: ${category}`);
+    }
+    return this.classifyRisk(score, thresholds[category]);
+  }
+
+  classifyRisk(score, thresholds) {
+    if (!Number.isFinite(Number(score))) {
+      throw new Error(`INVALID_NOM035_SCORE: ${String(score)}`);
+    }
+    const [low, medium, high, veryHigh] = thresholds;
+    if (score < low) return { level: "Nulo o Despreciable", class: "nulo" };
+    if (score < medium) return { level: "Bajo", class: "bajo" };
+    if (score < high) return { level: "Medio", class: "medio" };
+    if (score < veryHigh) return { level: "Alto", class: "alto" };
+    return { level: "Muy Alto", class: "muy-alto" };
   }
 }

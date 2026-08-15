@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>Observatorio del departamento — NOM-035</title>
+  <style>
+    :root { --bg:#f8fafc; --card:#fff; --text:#1e293b; --muted:#64748b; --border:#e2e8f0; }
+    *{box-sizing:border-box} body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:24px}
+    main{max-width:1100px;margin:auto}.panel{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:28px;box-shadow:0 10px 28px rgba(15,23,42,.06)}
+    header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:20px}
+    h1{font-size:23px;margin:0;color:#0f172a}p{color:var(--muted);line-height:1.55}.live{font-size:12px;font-weight:800;color:#166534;background:#dcfce7;padding:7px 11px;border-radius:999px}
+    .indicators-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
+    .indicator-card{background:#f8fafc;border:1px solid var(--border);border-radius:14px;padding:18px;text-align:center}
+    .indicator-card h4{margin:0 0 12px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.45px}
+    .color-square{min-height:80px;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:white;font-size:18px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.25);padding:8px}
+    .color-square small{font-size:16px}.indicator-meta{margin-top:9px;display:flex;justify-content:center;gap:8px;font-size:12px;font-weight:700}.indicator-time{font-size:11px;color:var(--muted);margin-top:5px}
+    .empty,.error{padding:20px;border-radius:12px;background:#f1f5f9;color:var(--muted)}.error{background:#fef2f2;color:#991b1b}
+    footer{text-align:center;color:var(--muted);font-size:12px;padding:18px}.privacy{font-size:12px;border-left:4px solid #94a3b8;padding-left:12px;margin-top:20px}
+  </style>
+</head>
+<body>
+<main>
+  <section class="panel">
+    <header>
+      <div>
+        <h1>Estado agregado del departamento</h1>
+        <p id="departmentLabel">Vista protegida para observación organizacional.</p>
+      </div>
+      <span class="live">● Actualización automática</span>
+    </header>
+    <div id="indicatorGrid" class="indicators-grid"><div class="empty">Cargando indicadores seguros…</div></div>
+    <p class="privacy">Esta vista no contiene nombres, cuentas, ubicación, pulso ni respuestas individuales. Los indicadores con menos del tamaño mínimo de celda permanecen protegidos. No debe utilizarse para decisiones laborales individuales.</p>
+  </section>
+  <footer>CRM Sharks &amp; Ray · NOM-035 + Health Model Research</footer>
+</main>
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+  import { indicatorCardHtml, escapeHtml } from './indicator_observatory.js';
+
+  const supabase = createClient(
+    'https://hjmmphkxbnuxnpcbawpg.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
+  );
+  const token = new URLSearchParams(window.location.search).get('token') || '';
+
+  async function load() {
+    const grid = document.getElementById('indicatorGrid');
+    if (!token) {
+      grid.innerHTML = '<div class="error">El enlace de observación está incompleto.</div>';
+      return;
+    }
+    const { data, error } = await supabase.rpc('get_observer_department_current', { p_token: token });
+    if (error) {
+      grid.innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
+      return;
+    }
+    if (!data?.length) {
+      grid.innerHTML = '<div class="empty">Todavía no existen agregados seguros para este departamento.</div>';
+      return;
+    }
+    document.getElementById('departmentLabel').textContent = `Departamento: ${data[0].department_id} · vista agregada`;
+    grid.innerHTML = data.map(item => indicatorCardHtml(item, { aggregate:true })).join('');
+  }
+  await load();
+  window.setInterval(load, 60000);
+</script>
+</body>
+</html>
