@@ -124,7 +124,7 @@
         <h3 id="c2-title">⚙️ Panel de Administración</h3>
         <p id="c2-desc">Gestión de la estructura de talleres, departamentos y supervisión gerencial de resultados anónimos.</p>
       </div>
-      <a href="admin.html" class="btn secondary" data-btn="admin">Ir al Panel</a>
+      <a href="auth.html?next=admin.html&amp;mode=admin" class="btn secondary" data-btn="admin">Ir al Panel</a>
     </div>
 
     <!-- Карточка 3: Оценка -->
@@ -133,7 +133,7 @@
         <h3 id="c3-title">📋 Simulador / Módulo de Evaluación</h3>
         <p id="c3-desc">Cuestionario confidencial evaluado estrictamente bajo las tablas oficiales de la NOM-035 (Guía III).</p>
       </div>
-      <a href="evaluacion.html" class="btn" data-btn="start">Iniciar Evaluación</a>
+      <a href="auth.html?next=evaluacion.html" class="btn" data-btn="start">Iniciar Evaluación</a>
     </div>
 
     <!-- Карточка 4: Доп. опросник -->
@@ -142,16 +142,16 @@
         <h3 id="c4-title">📝 Evaluación Complementaria de Recursos</h3>
         <p id="c4-desc">Protocolo Health Model de 70 preguntas: recursos, recuperación, dinámica y marcadores, con consentimiento por sesión.</p>
       </div>
-      <a href="extra_survey.html" class="btn warning" data-btn="survey">Iniciar Evaluación de Recursos</a>
+      <a href="auth.html?next=extra_survey.html" class="btn warning" data-btn="survey">Iniciar Evaluación de Recursos</a>
     </div>
 
-    <!-- Карточка 5: Психологическая карта -->
+    <!-- Карточка 5: Публичная агрегированная карта -->
     <div class="card">
       <div>
-        <h3 id="c5-title">🗺️ Mapa Integrado de Evidencias</h3>
-        <p id="c5-desc">Comparación por bloques entre recursos, marcadores, sensores y dominios relacionados de NOM-035.</p>
+        <h3 id="c5-title">🗺️ Panorama Agregado de Departamentos</h3>
+        <p id="c5-desc">Vista pública de indicadores agregados protegidos. No contiene personas, respuestas ni mediciones individuales.</p>
       </div>
-      <a href="psych_map.html" class="btn purple" data-btn="map">Ver Mapa en Vivo</a>
+      <a href="overview.html" class="btn purple" data-btn="map">Ver Panorama en Vivo</a>
     </div>
 
     <!-- Карточка 6: ИИ Аналитик -->
@@ -161,6 +161,15 @@
         <p id="c6-desc">Explicación asistida de resultados conjuntos, discrepancias e incertidumbre, sin diagnóstico ni decisiones laborales individuales.</p>
       </div>
       <a href="ai_analyst.html" class="btn purple" data-btn="ai">Abrir IA Analítico</a>
+    </div>
+
+    <!-- Карточка 7: Индивидуальная карта доказательств -->
+    <div class="card">
+      <div>
+        <h3 id="c7-title">🔬 Mapa Personal de Evidencias</h3>
+        <p id="c7-desc">Comparación por bloques de los propios resultados Health Model y dominios relacionados de NOM-035.</p>
+      </div>
+      <a href="psych_map.html" class="btn" data-btn="personalMap">Abrir Mapa Personal</a>
     </div>
   </div>
 </div>
@@ -183,16 +192,19 @@
       c3Desc: "Cuestionario confidencial evaluado estrictamente bajo las tablas oficiales de la NOM-035 (Guía III).",
       c4Title: "📝 Evaluación Complementaria de Recursos",
       c4Desc: "Protocolo Health Model de 70 preguntas: recursos, recuperación, dinámica y marcadores, con consentimiento por sesión.",
-      c5Title: "🗺️ Mapa Integrado de Evidencias",
-      c5Desc: "Comparación por bloques entre recursos, marcadores, sensores y dominios relacionados de NOM-035.",
+      c5Title: "🗺️ Panorama Agregado de Departamentos",
+      c5Desc: "Vista pública de indicadores agregados protegidos. No contiene personas, respuestas ni mediciones individuales.",
       c6Title: "🤖 IA Analítico",
       c6Desc: "Explicación asistida de resultados conjuntos, discrepancias e incertidumbre, sin diagnóstico ni decisiones laborales individuales.",
+      c7Title: "🔬 Mapa Personal de Evidencias",
+      c7Desc: "Comparación por bloques de los propios resultados Health Model y dominios relacionados de NOM-035.",
       btnAuth: "Ir al Acceso",
       btnAdmin: "Ir al Panel",
       btnStart: "Iniciar Evaluación",
       btnSurvey: "Iniciar Evaluación de Recursos",
-      btnMap: "Ver Mapa en Vivo",
+      btnMap: "Ver Panorama en Vivo",
       btnAi: "Abrir IA Analítico",
+      btnPersonalMap: "Abrir Mapa Personal",
       langLabel: "🇺🇸 EN / 🇲🇽 ES"
     },
     en: {
@@ -207,16 +219,19 @@
       c3Desc: "Confidential questionnaire evaluated strictly under official NOM-035 tables (Guide III).",
       c4Title: "📝 Complementary Resource Assessment",
       c4Desc: "The 70-question Health Model protocol covering resources, recovery, dynamics, and markers, with consent for each session.",
-      c5Title: "🗺️ Integrated Evidence Map",
-      c5Desc: "Block-by-block comparison of resources, markers, sensors, and related NOM-035 domains.",
+      c5Title: "🗺️ Aggregate Department Overview",
+      c5Desc: "Public view of protected aggregate indicators. It contains no people, responses, or individual measurements.",
       c6Title: "🤖 AI Analyst",
       c6Desc: "AI-assisted explanation of joint results, mismatches, and uncertainty, without diagnosis or individual employment decisions.",
+      c7Title: "🔬 Personal Evidence Map",
+      c7Desc: "Block-by-block comparison of your own Health Model results and related NOM-035 domains.",
       btnAuth: "Go to Access",
       btnAdmin: "Go to Panel",
       btnStart: "Start Evaluation",
       btnSurvey: "Start Resource Assessment",
-      btnMap: "View Live Map",
+      btnMap: "View Live Overview",
       btnAi: "Open AI Analyst",
+      btnPersonalMap: "Open Personal Map",
       langLabel: "🇲🇽 ES / 🇺🇸 EN"
     }
   };
@@ -248,6 +263,8 @@
     
     document.getElementById('c6-title').textContent = t.c6Title;
     document.getElementById('c6-desc').textContent = t.c6Desc;
+    document.getElementById('c7-title').textContent = t.c7Title;
+    document.getElementById('c7-desc').textContent = t.c7Desc;
 
     document.querySelector('[data-btn="auth"]').textContent = t.btnAuth;
     document.querySelector('[data-btn="admin"]').textContent = t.btnAdmin;
@@ -255,6 +272,7 @@
     document.querySelector('[data-btn="survey"]').textContent = t.btnSurvey;
     document.querySelector('[data-btn="map"]').textContent = t.btnMap;
     document.querySelector('[data-btn="ai"]').textContent = t.btnAi;
+    document.querySelector('[data-btn="personalMap"]').textContent = t.btnPersonalMap;
 
     document.getElementById('langBtn').textContent = t.langLabel;
     document.documentElement.lang = currentLang;

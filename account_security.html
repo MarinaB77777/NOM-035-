@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seguridad de la cuenta — NOM-035</title>
+  <style>
+    :root{--bg:#0f172a;--card:#1e293b;--text:#f8fafc;--muted:#94a3b8;--border:#334155;--accent:#3b82f6}
+    *{box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);margin:0;min-height:100vh;display:grid;place-items:center;padding:20px}.card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:0 15px 35px rgba(0,0,0,.28)}h1{font-size:21px;margin:0 0 8px}p{color:var(--muted);font-size:13px;line-height:1.55}label{display:block;font-size:12px;font-weight:700;margin:16px 0 6px}input{width:100%;padding:12px;background:#0f172a;color:#fff;border:1px solid var(--border);border-radius:9px}.btn{width:100%;margin-top:18px;padding:12px;border:0;border-radius:9px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}.btn:disabled{opacity:.55;cursor:not-allowed}.message{min-height:20px;margin-top:14px;font-size:13px}.error{color:#fca5a5}.ok{color:#86efac}
+  </style>
+</head>
+<body>
+<main class="card">
+  <h1>Seguridad de la cuenta</h1>
+  <p>El nuevo password se envía directamente a Supabase Auth. No se guarda en tablas, archivos ni registros de la aplicación.</p>
+  <label for="currentPassword">Password actual</label>
+  <input id="currentPassword" type="password" autocomplete="current-password">
+  <label for="newPassword">Nuevo password</label>
+  <input id="newPassword" type="password" minlength="12" autocomplete="new-password">
+  <label for="confirmPassword">Confirmar nuevo password</label>
+  <input id="confirmPassword" type="password" minlength="12" autocomplete="new-password">
+  <button id="changePassword" class="btn">Cambiar password y cerrar sesión</button>
+  <div id="message" class="message"></div>
+</main>
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+  const supabase=createClient(
+    'https://hjmmphkxbnuxnpcbawpg.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
+  );
+  const message=document.getElementById('message');
+  const button=document.getElementById('changePassword');
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session){window.location.replace('auth.html?next=account_security.html')}
+
+  button.addEventListener('click',async()=>{
+    const currentPassword=document.getElementById('currentPassword').value;
+    const password=document.getElementById('newPassword').value;
+    const confirmation=document.getElementById('confirmPassword').value;
+    message.className='message error';
+    if(password.length<12){message.textContent='El nuevo password debe contener al menos 12 caracteres.';return}
+    if(password!==confirmation){message.textContent='La confirmación no coincide.';return}
+    if(password===currentPassword){message.textContent='El nuevo password debe ser diferente del actual.';return}
+    button.disabled=true;
+    const {error}=await supabase.auth.updateUser({password,current_password:currentPassword});
+    if(error){message.textContent='No se cambió: '+error.message;button.disabled=false;return}
+    document.getElementById('currentPassword').value='';
+    document.getElementById('newPassword').value='';
+    document.getElementById('confirmPassword').value='';
+    message.className='message ok';message.textContent='Password actualizado. Cerrando la sesión…';
+    await supabase.auth.signOut();
+    window.setTimeout(()=>window.location.replace('auth.html?next=admin.html&mode=admin'),900);
+  });
+</script>
+<script src="./site_navigation.js"></script>
+</body>
+</html>

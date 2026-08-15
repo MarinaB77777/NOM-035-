@@ -23,7 +23,7 @@
   <div class="access-card">
     <h2>Acceso administrativo protegido</h2>
     <p id="adminAccessMessage" style="color:var(--muted)">Verificando la sesión y los permisos…</p>
-    <a id="adminAuthLink" href="auth.html" class="btn hidden" style="width:100%">Entrar con una cuenta autorizada</a>
+    <a id="adminAuthLink" href="auth.html?next=admin.html&amp;mode=admin" class="btn hidden" style="width:100%">Entrar con una cuenta autorizada</a>
   </div>
 </div>
 
@@ -335,8 +335,9 @@
   document.getElementById('checkSamplingBtn').addEventListener('click',checkSamplingReadiness);
   document.getElementById('runNomSampleBtn').addEventListener('click',runNomSample);
   document.getElementById('runSensorSampleBtn').addEventListener('click',runSensorSample);
-  document.getElementById('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();window.location.href='auth.html'});
+  document.getElementById('logoutBtn').addEventListener('click',async()=>{await supabase.auth.signOut();window.location.href='auth.html?next=admin.html&mode=admin'});
   if(await verifyManager())await loadUnits();
 </script>
+<script src="./site_navigation.js"></script>
 </body>
 </html>

@@ -24,14 +24,14 @@
 <body>
 
 <div class="auth-card">
-    <h2>Acceso Colaborador</h2>
-    <p>Ingresa un usuario único y contraseña para mantener tu anonimato.</p>
+    <h2 id="authTitle">Acceso Colaborador</h2>
+    <p id="authDescription">Ingresa un usuario único y contraseña para mantener tu anonimato.</p>
     
     <input type="text" id="usernameInput" placeholder="Usuario único (ej. worker_01)" />
     <input type="password" id="passwordInput" placeholder="Contraseña" />
     
     <div class="btn-group">
-        <button class="btn-reg" onclick="handleSignUp()">Registrarse</button>
+        <button id="registerButton" class="btn-reg" onclick="handleSignUp()">Registrarse</button>
         <button class="btn-login" onclick="handleSignIn()">Entrar</button>
     </div>
     
@@ -45,6 +45,29 @@
         'https://hjmmphkxbnuxnpcbawpg.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
     );
+
+    const requested = new URLSearchParams(window.location.search);
+    const allowedDestinations = new Set([
+        'dashboard.html', 'evaluacion.html', 'extra_survey.html',
+        'admin.html', 'sensors.html', 'consent_editor.html', 'account_security.html'
+    ]);
+    const requestedNext = requested.get('next') || 'dashboard.html';
+    const destination = allowedDestinations.has(requestedNext) ? requestedNext : 'dashboard.html';
+    const administratorMode = requested.get('mode') === 'admin' || destination === 'admin.html';
+
+    if (administratorMode) {
+        document.getElementById('authTitle').textContent = 'Acceso administrativo';
+        document.getElementById('authDescription').textContent = 'Ingresa con una cuenta Supabase autorizada para administrar NOM-035.';
+        document.getElementById('registerButton').style.display = 'none';
+    } else if (destination === 'evaluacion.html') {
+        document.getElementById('authDescription').textContent = 'Ingresa o regístrate. Después abrirás automáticamente la evaluación NOM-035.';
+    } else if (destination === 'extra_survey.html') {
+        document.getElementById('authDescription').textContent = 'Ingresa o regístrate. Después abrirás automáticamente la evaluación Health Model.';
+    }
+
+    function continueToRequestedPage() {
+        window.location.replace(destination);
+    }
 
     function getSystemEmail(username) {
     const clean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
@@ -80,8 +103,8 @@
                 return;
             }
 
-            alert('¡Registro exitoso! Redirigiendo al cuestionario...');
-            window.location.href = 'dashboard.html';
+            alert('¡Registro exitoso! Continuando…');
+            continueToRequestedPage();
         }
     }
 
@@ -102,10 +125,12 @@
         if (error) {
             errorEl.textContent = 'Usuario o contraseña incorrectos';
         } else {
-            window.location.href = 'dashboard.html';
+            continueToRequestedPage();
         }
     }
 </script>
+
+<script src="./site_navigation.js"></script>
 
 </body>
 </html>

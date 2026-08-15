@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>Panorama agregado — NOM-035</title>
+  <style>
+    :root{--bg:#0f172a;--surface:#1e293b;--card:#fff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;--accent:#3b82f6}
+    *{box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);margin:0;padding:24px;color:#f8fafc}main{max-width:1200px;margin:auto}
+    header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:24px}h1{margin:0;font-size:26px}header p{color:#cbd5e1;line-height:1.55;max-width:780px}.btn{background:#475569;color:#fff;text-decoration:none;padding:10px 16px;border-radius:9px;font-weight:700}
+    .department{background:var(--card);color:var(--text);border-radius:16px;padding:24px;margin-bottom:20px;border:1px solid var(--border)}.department h2{margin:0 0 6px;font-size:19px}.updated{font-size:12px;color:var(--muted);margin-bottom:16px}
+    .indicators-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:13px}.indicator-card{background:#f8fafc;border:1px solid var(--border);border-radius:13px;padding:15px;text-align:center}.indicator-card h4{margin:0 0 9px;color:var(--muted);font-size:10px;text-transform:uppercase}.color-square{min-height:72px;border-radius:10px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.25);padding:8px}.color-square small{font-size:15px}.indicator-meta,.indicator-time{font-size:11px;color:var(--muted);margin-top:6px}.indicator-n{margin-left:5px}
+    .notice,.error{background:var(--surface);border:1px solid #334155;border-radius:14px;padding:22px;color:#cbd5e1}.error{border-color:#7f1d1d;color:#fecaca}.privacy{color:#94a3b8;font-size:12px;line-height:1.6;margin-top:24px}footer{text-align:center;color:#94a3b8;font-size:12px;padding:22px}
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Panorama agregado de departamentos</h1><p>Estado organizacional actualizado cuando llegan nuevas mediciones válidas. La presencia en línea no modifica los indicadores.</p></div>
+    <a class="btn" href="index.html">🏠 Inicio</a>
+  </header>
+  <div id="overview"><div class="notice">Cargando agregados protegidos…</div></div>
+  <p class="privacy">Vista pública de investigación. No contiene nombres, cuentas, respuestas, coordenadas ni mediciones individuales. Los grupos menores al tamaño mínimo permanecen protegidos. No es un diagnóstico ni una evaluación laboral individual.</p>
+  <footer>CRM Sharks &amp; Ray · NOM-035 + Health Model Research</footer>
+</main>
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+  import { indicatorCardHtml, escapeHtml } from './indicator_observatory.js';
+  const supabase=createClient(
+    'https://hjmmphkxbnuxnpcbawpg.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqbW1waGt4Ym51eG5wY2Jhd3BnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNDgzNjQsImV4cCI6MjEwMTYyNDM2NH0.bCfCDKS1CT7lNCuJI-Vn4gQd-VbFpcEXVj5WfU3ZpNU'
+  );
+
+  async function loadOverview(){
+    const root=document.getElementById('overview');
+    const {data,error}=await supabase.rpc('get_public_department_indicator_overview');
+    if(error){root.innerHTML=`<div class="error">${escapeHtml(error.message)}</div>`;return}
+    if(!data?.length){root.innerHTML='<div class="notice">Todavía no existen mediciones agregadas para mostrar.</div>';return}
+    const groups=new Map();
+    data.forEach(item=>{
+      const key=String(item.department_id);
+      if(!groups.has(key))groups.set(key,{name:item.department_name,items:[]});
+      groups.get(key).items.push(item);
+    });
+    root.innerHTML=[...groups.values()].map(group=>{
+      const latest=group.items.reduce((value,item)=>Math.max(value,new Date(item.snapshot_at).getTime()||0),0);
+      return `<section class="department"><h2>${escapeHtml(group.name)}</h2><div class="updated">Última actualización: ${escapeHtml(latest?new Date(latest).toLocaleString('es-MX'):'Sin datos')}</div><div class="indicators-grid">${group.items.map(item=>indicatorCardHtml(item,{aggregate:true})).join('')}</div></section>`;
+    }).join('');
+  }
+  await loadOverview();
+  window.setInterval(loadOverview,60000);
+</script>
+<script src="./site_navigation.js"></script>
+</body>
+</html>
